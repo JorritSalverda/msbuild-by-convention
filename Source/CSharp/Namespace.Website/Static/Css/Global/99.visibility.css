@@ -1,0 +1,23 @@
+/* Styles for visibility
+-----------------------------------------------------------*/
+.hidden,
+.js .hidden-if-js,
+.no-js .hidden-if-no-js {
+  display: none; }
+
+.invisible,
+.js .invisible-if-js,
+.no-js .invisible-if-no-js {
+  visibility: hidden; }
+
+.invisible-until-fb-ready,
+.invisible-until-tw-ready,
+.invisible-until-js-ready,
+.invisible-until-gp-ready {
+  visibility: hidden; }
+
+.fb-ready .invisible-until-fb-ready,
+.tw-ready .invisible-until-tw-ready,
+.js-ready .invisible-until-js-ready,
+.gp-ready .invisible-until-gp-ready {
+  visibility: visible; }

@@ -1,0 +1,5 @@
+
+23-12-2011  14:22            91.976 Microsoft.Web.Delegation.dll
+23-12-2011  14:22         1.218.376 Microsoft.Web.Deployment.dll
+23-12-2011  14:22           165.704 msdeploy.exe
+23-12-2011  14:22               150 msdeploy.exe.config

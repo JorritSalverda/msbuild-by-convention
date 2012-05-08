@@ -1,0 +1,6 @@
+
+23-12-2011  14:22            87.904 Microsoft.SqlServer.Management.PSProvider.dll
+23-12-2011  14:22            59.232 Microsoft.SqlServer.Management.PSSnapins.dll
+23-12-2011  14:22            62.689 SQLProvider.Format.ps1xml
+23-12-2011  14:22            15.552 SQLProvider.Types.ps1xml
+23-12-2011  14:22            83.808 SQLPS.exe

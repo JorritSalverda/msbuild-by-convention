@@ -1,0 +1,4 @@
+
+23-12-2011  14:22            82.264 Microsoft.VisualStudio.WindowsAzure.Tasks.1.6.dll
+23-12-2011  14:22            15.208 Microsoft.VisualStudio.WindowsAzure.Tasks.Host.1.6.dll
+23-12-2011  14:22           159.524 Microsoft.WindowsAzure.targets

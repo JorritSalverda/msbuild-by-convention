@@ -1,0 +1,16 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<Import Project="properties-convention-based.msbuild"/>
+	
+	<!-- add solutions that have to be build before any other solutions; all solutions will be added later on anyway, but in an undetermined order -->
+	<!-- leave empty if none of the solutions have any reference to each other -->
+	<ItemGroup>
+		<!--<SolutionsToBuild Include="$(SourceDirectory)Namespace.Library.sln"/>-->
+	</ItemGroup>
+	
+	<!-- override conventions if you want to deviate from the default ones -->	
+	<PropertyGroup>
+		<!--<DependencyDirectory>$(BaseDirectory)source\lib\</DependencyDirectory>-->
+	</PropertyGroup>	
+
+</Project>

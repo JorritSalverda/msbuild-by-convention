@@ -1,0 +1,11 @@
+
+23-12-2011  14:22           133.976 DesignRules.dll
+23-12-2011  14:22            50.528 GlobalizationRules.dll
+23-12-2011  14:22            41.320 InteroperabilityRules.dll
+23-12-2011  14:22            18.264 MobilityRules.dll
+23-12-2011  14:22           102.232 NamingRules.dll
+23-12-2011  14:22            54.624 PerformanceRules.dll
+23-12-2011  14:22            38.752 PortabilityRules.dll
+23-12-2011  14:22            63.320 SecurityRules.dll
+23-12-2011  14:22           260.976 SecurityTransparencyRules.dll
+23-12-2011  14:22           105.808 UsageRules.dll

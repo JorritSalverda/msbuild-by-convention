@@ -1,0 +1,114 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    
+	<PropertyGroup>
+		<!-- common directories -->
+		<BaseDirectory Condition=" '$(BaseDirectory)' == '' ">..\..\</BaseDirectory>
+		<DependencyDirectory>$(BaseDirectory)Dependencies\</DependencyDirectory>
+		<DependencyNuGetDirectory>$(DependencyDirectory)NuGet\</DependencyNuGetDirectory>
+		<SourceDirectory>$(BaseDirectory)Source\</SourceDirectory>
+		<BuildDirectory>$(BaseDirectory)Build\</BuildDirectory>
+		<BuildToolsDirectory>$(BuildDirectory)Tools\</BuildToolsDirectory>
+		<BinDirectory>$(BuildDirectory)Bin\</BinDirectory>
+		<ReleaseDirectory>$(BuildDirectory)Releases\</ReleaseDirectory>
+		<ReleaseTempDirectory>$(ReleaseDirectory)Temp\</ReleaseTempDirectory>
+		<TestResultsDirectory>$(BuildDirectory)TestResults\</TestResultsDirectory>
+		<CodeAnalysisDirectory>$(BuildDirectory)CodeAnalysis\</CodeAnalysisDirectory>		
+		<CSharpSourceDirectory>$(BaseDirectory)Source\CSharp\</CSharpSourceDirectory>
+		<HtmlSourceDirectory>$(BaseDirectory)Source\Html\</HtmlSourceDirectory>
+		<FlashSourceDirectory>$(BaseDirectory)Source\Flash\</FlashSourceDirectory>
+		<IntegrationTestsDirectory>$(BaseDirectory)IntegrationTests\</IntegrationTestsDirectory>
+		<JMeterTestsDirectory>$(IntegrationTestsDirectory)JMeterTests\</JMeterTestsDirectory>
+		
+		<!-- tool paths -->
+		<NUnitToolPath>$(BuildToolsDirectory)NUnit-2.6.0.12051\</NUnitToolPath>
+		<MSpecRunnerPath>$(DependencyNuGetDirectory)Machine.Specifications.0.5.3.0\tools\mspec-clr4.exe</MSpecRunnerPath>
+		<MSBuildCommunityTasksPath>$(BuildToolsDirectory)MSBuild.Community.Tasks.v1.2.0.306\MSBuild.Community.Tasks.dll</MSBuildCommunityTasksPath>
+		<YUICompressorPath>$(BuildToolsDirectory)Yahoo.Yui.Compressor.v1.6.0.2\</YUICompressorPath>
+		<ExtensionTasksPath>$(BuildToolsDirectory)MSBuild.ExtensionPack.Binaries.v4.0.2.0\MSBuild.ExtensionPack.dll</ExtensionTasksPath>
+		<FxCopPath>$(BuildToolsDirectory)FxCop.v10.0\</FxCopPath>
+		<MsDeployPath>$(BuildToolsDirectory)MsDeploy.v2\msdeploy.exe</MsDeployPath>
+		<DbDeployPath>$(BuildToolsDirectory)Vs2010DbCmd\vsdbcmd.exe</DbDeployPath>
+		<WebPublishingPath>$(BuildToolsDirectory)VS2010WebPublishing\Microsoft.Web.Publishing.Tasks.Dll</WebPublishingPath>
+		<CloudExtensionsDir>$(BuildToolsDirectory)Windows.Azure.Tools.v1.6\</CloudExtensionsDir>
+		<PowershellPath>$(windir)\system32\WindowsPowerShell\v1.0\powershell.exe</PowershellPath>
+		<AzureDeployScript>AzureDeploy.ps1</AzureDeployScript>
+		<AzureDeleteScript>AzureDelete.ps1</AzureDeleteScript>
+		<FlexSdkPath>$(BuildToolsDirectory)flex_sdk_4.5.1.21328\bin\mxmlc.exe</FlexSdkPath>
+		<DacDeployScript>DacDeploy.ps1</DacDeployScript>
+		<SqlPowershellPath>$(BuildToolsDirectory)SqlPowershell-10.50.1600.1\SQLPS.exe</SqlPowershellPath>
+		<JMeterToolPath>$(BuildToolsDirectory)apache-jmeter-2.6\bin\jmeter</JMeterToolPath>
+		<JpegtranPath>$(BuildToolsDirectory)Jpegtran\jpegtran.exe</JpegtranPath>
+		<OptiPngPath>$(BuildToolsDirectory)optipng-0.7.1-win32\optipng.exe</OptiPngPath>
+		
+		<!-- other properties -->
+		<BuildVersion Condition=" '$(BuildVersion)' == '' ">$(build_number)</BuildVersion>
+		<BuildVersion Condition=" '$(BuildVersion)' == '' ">$(CCNetLabel)</BuildVersion>
+		<BuildVersion Condition=" '$(BuildVersion)' == '' ">1.0.0.0</BuildVersion>				
+		<Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>				
+		<DeployEnvironment Condition=" '$(DeployEnvironment)' == '' "></DeployEnvironment>
+		<CompileTarget>Rebuild</CompileTarget>		
+		<BuildParameters Condition=" '$(Configuration)' == 'Debug' ">Configuration=$(Configuration);DebugSymbols=true;DebugType=full;RunCodeAnalysis=false;Optimize=false;PreBuildEvent=;PostBuildEvent=</BuildParameters>
+		<BuildParameters Condition=" '$(Configuration)' == 'Release' ">Configuration=$(Configuration);DebugSymbols=true;DebugType=pdbonly;RunCodeAnalysis=false;Optimize=true;PreBuildEvent=;PostBuildEvent=</BuildParameters>
+		<ConfigurationsToRelease Condition=" '$(ConfigurationsToRelease)' == '' ">*</ConfigurationsToRelease>
+		<SuitedForAllEnvironmentsDirectoryName>_Global</SuitedForAllEnvironmentsDirectoryName>
+		<CreateUpdateableAspxFilesInRelease>false</CreateUpdateableAspxFilesInRelease>
+		
+		<!-- deploy properties -->
+		<ProjectToDeploy></ProjectToDeploy>	
+		<DeployServer></DeployServer>
+		<DeployUsername></DeployUsername>
+		<DeployPassword></DeployPassword>
+		<DeployTargetName></DeployTargetName>
+		
+		<!-- deploy azure properties -->
+		<AzureSubscriptionID></AzureSubscriptionID>
+		<AzureCertificateFilename Condition=" '$(AzureCertificateFilename)' == '' ">AzureManagementCertificate.pfx</AzureCertificateFilename>
+		<AzureCertificatePassword></AzureCertificatePassword>
+		<AzureHostedServiceName></AzureHostedServiceName>
+		<AzureHostedServiceSlot></AzureHostedServiceSlot>
+		<AzureStorageAccountName></AzureStorageAccountName>
+		<AzureStorageAccountKey></AzureStorageAccountKey>
+		<AzureSwapToProductionAfterDeploy Condition=" '$(AzureSwapToProductionAfterDeploy)' == '' ">False</AzureSwapToProductionAfterDeploy>
+		<AzureRemoveStagingAfterSwap Condition=" '$(AzureRemoveStagingAfterSwap)' == '' ">False</AzureRemoveStagingAfterSwap>		
+		<AzureDisallowMultipleActiveInstances Condition=" '$(AzureDisallowMultipleActiveInstances)' == '' ">False</AzureDisallowMultipleActiveInstances>		
+		
+		<!-- delete properties -->
+		<ProjectToDelete></ProjectToDelete>
+		
+		<!-- project and directory convention names -->
+		<WebsiteProjectConventionName>Website</WebsiteProjectConventionName>
+		<WebServiceProjectConventionName>WebService</WebServiceProjectConventionName>
+		<ConsoleAppProjectConventionName>Console</ConsoleAppProjectConventionName>
+		<WindowsServiceProjectConventionName>Service</WindowsServiceProjectConventionName>
+		<DatabaseProjectConventionName>Database</DatabaseProjectConventionName>
+		<WorkerProjectConventionName>Worker</WorkerProjectConventionName>
+		<AzureProjectConventionName>Azure</AzureProjectConventionName>
+		<FlashProjectDirectoryConventionName>Flash</FlashProjectDirectoryConventionName>
+		<JavascriptDirectoryConventionName>static\js</JavascriptDirectoryConventionName>
+		<CssDirectoryConventionName>static\css</CssDirectoryConventionName>		
+		<UnitTestsProjectConventionName>UnitTests</UnitTestsProjectConventionName>
+		<IntegrationTestsProjectConventionName>IntegrationTests</IntegrationTestsProjectConventionName>
+		<StaticHtmlProjectConventionName>Html</StaticHtmlProjectConventionName>
+	</PropertyGroup>
+		
+	<!-- tasks used for nunit, attrib en other tasks -->
+	<UsingTask AssemblyFile="$(MSBuildCommunityTasksPath)" TaskName="MSBuild.Community.Tasks.Attrib" />
+	<UsingTask AssemblyFile="$(MSBuildCommunityTasksPath)" TaskName="MSBuild.Community.Tasks.FileUpdate" />
+	<UsingTask AssemblyFile="$(MSBuildCommunityTasksPath)" TaskName="MSBuild.Community.Tasks.NUnit" />
+						
+	<!-- tasks used for minification -->
+	<UsingTask AssemblyFile="$(ExtensionTasksPath)" TaskName="MSBuild.ExtensionPack.FileSystem.Folder"/>
+	<UsingTask AssemblyFile="$(ExtensionTasksPath)" TaskName="MSBuild.ExtensionPack.Framework.TextString"/>
+	<UsingTask AssemblyFile="$(ExtensionTasksPath)" TaskName="MSBuild.ExtensionPack.Framework.MSBuildHelper"/>
+	<UsingTask AssemblyFile="$(ExtensionTasksPath)" TaskName="MSBuild.ExtensionPack.CodeQuality.FxCop"/>
+			
+    <!-- used for minifying javascript and css -->			
+	<UsingTask TaskName="CompressorTask" AssemblyFile="$(YUICompressorPath)Yahoo.Yui.Compressor.MsBuildTask.dll" />
+				
+    <!-- teamcity uses a custom nunit task to be able to import the output -->				
+	<UsingTask TaskName="NUnit" AssemblyFile="$(teamcity_dotnet_nunitlauncher_msbuild_task)" Condition=" '$(teamcity_dotnet_nunitlauncher_msbuild_task)' != '' "/>				
+	
+	<!-- task for config transforms -->
+	<UsingTask TaskName="TransformXml" AssemblyFile="$(WebPublishingPath)" />
+						
+</Project>

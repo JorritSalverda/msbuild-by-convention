@@ -1,0 +1,11 @@
+
+07-05-2012  20:14    <DIR>          Engines
+23-12-2011  14:22            83.792 FxCopCmd.exe
+23-12-2011  14:22           209.240 FxCopCommon.dll
+23-12-2011  14:22           170.832 FxCopSdk.dll
+23-12-2011  14:22           352.600 Microsoft.Cci.dll
+23-12-2011  14:22            67.472 Microsoft.VisualStudio.CodeAnalysis.Common.dll
+23-12-2011  14:22            85.912 Microsoft.VisualStudio.CodeAnalysis.Interop.dll
+07-05-2012  20:14    <DIR>          Repository
+07-05-2012  20:14    <DIR>          Rules
+07-05-2012  20:14    <DIR>          Xml

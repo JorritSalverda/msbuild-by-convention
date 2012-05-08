@@ -1,0 +1,1102 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+
+	<Import Project="properties-repository-specific.msbuild" />
+	
+	<Target Name="Clean" DependsOnTargets="BeforeCleanPre;BeforeClean;BeforeCleanPost;CoreClean;AfterCleanPre;AfterClean;AfterCleanPost" />
+	<Target Name="BeforeClean" />
+	<Target Name="AfterClean" />
+	<Target Name="CoreClean">
+		<ItemGroup>
+			<DirectoriesToClean Include="$(BinDirectory)" />
+			<DirectoriesToClean Include="$(ReleaseDirectory)" />
+			<DirectoriesToClean Include="$(TestResultsDirectory)" />
+			<DirectoriesToClean Include="$(CodeAnalysisDirectory)" />
+		</ItemGroup>
+
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(DirectoriesToClean.FullPath)" Condition=" Exists('%(DirectoriesToClean.FullPath)') " />
+
+		<RemoveDir Directories="@(DirectoriesToClean)" />
+		<MakeDir Directories="@(DirectoriesToClean)" />	  
+	</Target>
+
+	<Target Name="CopyDependencies" DependsOnTargets="BeforeCopyDependenciesPre;BeforeCopyDependencies;BeforeCopyDependenciesPost;CoreCopyDependencies;AfterCopyDependenciesPre;AfterCopyDependencies;AfterCopyDependenciesPost" />
+	<Target Name="BeforeCopyDependencies" />
+	<Target Name="AfterCopyDependencies" />
+	<Target Name="CoreCopyDependencies">
+		<ItemGroup>
+			<DependenciesToCopy Include="$(DependencyDirectory)**\*.dll" />
+			<DependenciesToCopy Include="$(DependencyDirectory)**\*.xml" />
+		</ItemGroup>
+		<Copy SourceFiles="@(DependenciesToCopy)" DestinationFolder="$(BinDirectory)" Condition=" @(DependenciesToCopy) != '' " />
+	</Target>
+
+	<Target Name="SetAssemblyFileVersion" DependsOnTargets="BeforeSetAssemblyFileVersionPre;BeforeSetAssemblyFileVersion;BeforeSetAssemblyFileVersionPost;CoreSetAssemblyFileVersion;AfterSetAssemblyFileVersionPre;AfterSetAssemblyFileVersion;AfterSetAssemblyFileVersionPost" />
+	<Target Name="BeforeSetAssemblyFileVersion" />
+	<Target Name="AfterSetAssemblyFileVersion" />
+	<Target Name="CoreSetAssemblyFileVersion">
+
+		<!-- set correct file version -->
+		<ItemGroup>
+			<AssemblyInfoFiles Include="$(CSharpSourceDirectory)**\AssemblyInfo.cs" />
+		</ItemGroup>
+		<Attrib ReadOnly="false" Files="@(AssemblyInfoFiles)" />
+	    <FileUpdate Files="@(AssemblyInfoFiles)" Regex="\[\s*assembly\s*:\s*AssemblyFileVersion\s*\(\s*&quot;[\d\.\*]+&quot;\s*\)\s*\]" ReplacementText="[assembly: AssemblyFileVersion(&quot;$(BuildVersion)&quot;)]" Condition=" @(AssemblyInfoFiles) != '' " />
+
+	</Target>
+
+	<Target Name="Compile" DependsOnTargets="Clean;CopyDependencies;SetAssemblyFileVersion;BeforeCompilePre;BeforeCompile;BeforeCompilePost;CoreCompile;AfterCompilePre;AfterCompile;AfterCompilePost" />
+	<Target Name="BeforeCompile">
+		<!-- solutions that have a dependency order are specified in properties-repository-specific.msbuild; over here we add all solutions so it's not neccessary to list them all in properties-repository-specific.msbuild -->
+		<ItemGroup>
+			<SolutionsToBuild Include="$(CSharpSourceDirectory)**\*.sln" />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterCompile" />	
+    <Target Name="CoreCompile" Inputs="%(SolutionsToBuild.RootDir)%(SolutionsToBuild.Directory)" Outputs="NonExistingOutputToTriggerTargetForEverySolution">
+
+		<Error Text="There are no solutions to compile!" Condition=" @(SolutionsToBuild) == '' " />
+
+		<!-- build solution -->
+		<MSBuild Projects="%(SolutionsToBuild.FullPath)" Targets="$(CompileTarget)" Properties="$(BuildParameters)">
+			<Output TaskParameter="TargetOutputs" ItemName="BuildOutput" />
+		</MSBuild>
+
+		<!-- compile views for all website and webservice projects -->
+		<ItemGroup>
+			<ProjectsToBuild Include="%(SolutionsToBuild.RootDir)%(SolutionsToBuild.Directory)**\*.$(WebsiteProjectConventionName).csproj" />
+			<ProjectsToBuild Include="%(SolutionsToBuild.RootDir)%(SolutionsToBuild.Directory)**\*.$(WebServiceProjectConventionName).csproj" />
+		</ItemGroup>
+
+		<!-- remove obj directory from build directory, otherwise aspnetcompiler might fail due to multiple web.configs -->
+		<ItemGroup>
+			<DirectoriesToRemove Remove="@(DirectoriesToRemove)" />
+			<DirectoriesToRemove Include="%(ProjectsToBuild.RelativeDir)obj" />
+		</ItemGroup>
+
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(DirectoriesToRemove.FullPath)" Condition=" Exists('%(DirectoriesToRemove.FullPath)') " />
+		<RemoveDir Directories="@(DirectoriesToRemove)" />
+
+		<AspNetCompiler VirtualPath="/" PhysicalPath="%(ProjectsToBuild.RelativeDir)" Condition=" Exists('%(ProjectsToBuild.RelativeDir)Web.config') " />
+
+		<!-- copy output assemblies to build/bin directory -->
+        <Copy SourceFiles="@(BuildOutput)" DestinationFolder="$(BinDirectory)" Condition = "%(Extension) == '.dll' Or %(Extension) == '.xml'" />
+    </Target>
+
+	<Target Name="RunUnitTests" DependsOnTargets="BeforeRunUnitTestsPre;BeforeRunUnitTests;BeforeRunUnitTestsPost;CoreRunUnitTests;AfterRunUnitTestsPre;AfterRunUnitTests;AfterRunUnitTestsPost" />
+	<Target Name="BeforeRunUnitTests" />
+	<Target Name="AfterRunUnitTests" />	
+	<Target Name="CoreRunUnitTests">
+
+		<ItemGroup>
+			<UnitTestProjects Remove="@(UnitTestProjects)" />
+			<UnitTestProjects Include="$(CSharpSourceDirectory)**\*.$(UnitTestsProjectConventionName).csproj" />
+		</ItemGroup>
+
+		<ItemGroup>
+			<TestAssemblies Remove="@(TestAssemblies)" />
+			<TestAssemblies Include="%(UnitTestProjects.RelativeDir)bin\$(Configuration)\%(UnitTestProjects.Filename).dll" />
+		</ItemGroup>
+		
+		<!-- filter out test assemblies if nunit.framework.dll is not referenced -->
+		<ItemGroup>
+			<NunitTestAssemblies Remove="@(NunitTestAssemblies)" />
+			<NunitTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)nunit.framework.dll') " />
+		</ItemGroup>
+			
+		<NUnit Assemblies="@(NunitTestAssemblies)" ToolPath="$(NUnitToolPath)" OutputXmlFile="$(TestResultsDirectory)$(UnitTestsProjectConventionName).Results.xml" DisableShadowCopy="true" Condition=" @(NunitTestAssemblies) != '' " />
+
+		<!-- filter out test assemblies if Machine.Specifications.dll is not referenced -->
+		<ItemGroup>
+			<MSpecTestAssemblies Remove="@(MSpecTestAssemblies)" />
+			<MSpecTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)Machine.Specifications.dll') " />
+		</ItemGroup>
+			
+		<Exec Command="$(MSpecRunnerPath) --teamcity --html $(TestResultsDirectory) @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " />
+	</Target>
+
+	<Target Name="RunIntegrationTests" DependsOnTargets="BeforeRunIntegrationTestsPre;BeforeRunIntegrationTests;BeforeRunIntegrationTestsPost;CoreRunIntegrationTests;AfterRunIntegrationTestsPre;AfterRunIntegrationTests;AfterRunIntegrationTestsPost" />
+	<Target Name="BeforeRunIntegrationTests" />
+	<Target Name="AfterRunIntegrationTests" />	
+	<Target Name="CoreRunIntegrationTests">
+
+		<ItemGroup>
+			<IntegrationTestProjects Remove="@(IntegrationTestProjects)" />
+			<IntegrationTestProjects Include="$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />
+		</ItemGroup>
+
+		<ItemGroup>
+			<TestAssemblies Remove="@(TestAssemblies)" />
+			<TestAssemblies Include="%(IntegrationTestProjects.RelativeDir)bin\$(Configuration)\%(IntegrationTestProjects.Filename).dll" />
+		</ItemGroup>
+		
+		<!-- filter out test assemblies if nunit.framework.dll is not referenced -->
+		<ItemGroup>
+			<NunitTestAssemblies Remove="@(NunitTestAssemblies)" />
+			<NunitTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)nunit.framework.dll') " />
+		</ItemGroup>
+			
+		<NUnit Assemblies="@(NunitTestAssemblies)" ToolPath="$(NUnitToolPath)" OutputXmlFile="$(TestResultsDirectory)$(IntegrationTestsProjectConventionName).Results.xml" DisableShadowCopy="true" Condition=" @(NunitTestAssemblies) != '' " />
+
+		<!-- filter out test assemblies if Machine.Specifications.dll is not referenced -->
+		<ItemGroup>
+			<MSpecTestAssemblies Remove="@(MSpecTestAssemblies)" />
+			<MSpecTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)Machine.Specifications.dll') " />
+		</ItemGroup>
+			
+		<Exec Command="$(MSpecRunnerPath) --teamcity --html $(TestResultsDirectory) @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " />
+	</Target>
+
+	<Target Name="RunJMeterTests" DependsOnTargets="BeforeRunJMeterTestsPre;BeforeRunJMeterTests;BeforeRunJMeterTestsPost;AfterRunJMeterTestsPre;CoreRunJMeterTests;AfterRunJMeterTests;AfterRunJMeterTestsPost" />
+	<Target Name="BeforeRunJMeterTests">
+
+		<ItemGroup>
+			<JMeterTestProjects Remove="@(JMeterTestProjects)" />
+			<JMeterTestProjects Include="$(JMeterTestsDirectory)**\*.jmx" />
+		</ItemGroup>
+	
+	</Target>
+	<Target Name="AfterRunJMeterTests" />	
+	<Target Name="CoreRunJMeterTests" Inputs="%(JMeterTestProjects.FullPath)" Outputs="NonExistingOutputToTriggerTargetForEveryDirectory">
+
+		<ConvertToAbsolutePath Paths="$(TestResultsDirectory)%(JMeterTestProjects.Filename).log">
+			<Output TaskParameter="AbsolutePaths" PropertyName="JMeterTestLogFileLocation" />
+		</ConvertToAbsolutePath>
+
+		<ConvertToAbsolutePath Paths="$(TestResultsDirectory)%(JMeterTestProjects.Filename).jtl">
+			<Output TaskParameter="AbsolutePaths" PropertyName="JMeterTestOutputFileLocation" />
+		</ConvertToAbsolutePath>
+	
+		<!-- start non-gui version of jmeter and pass jmx file, test output location and log file output location -->
+		<Exec Command="$(JMeterToolPath) -n -t %(JMeterTestProjects.FullPath) -l $(JMeterTestOutputFileLocation) -j $(JMeterTestLogFileLocation)" Condition=" @(JMeterTestProjects) != '' " />
+		
+		<Message Text="##teamcity[importData type='junit' path='$(JMeterTestOutputFileLocation)']" />
+
+	</Target>
+	
+	<Target Name="MinifyJavaScript" DependsOnTargets="BeforeMinifyJavaScriptPre;BeforeMinifyJavaScript;BeforeMinifyJavaScriptPost;CoreMinifyJavaScript;AfterMinifyJavaScriptPre;AfterMinifyJavaScript;AfterMinifyJavaScriptPost" />
+	<Target Name="BeforeMinifyJavaScript">
+		<!-- remove previously minified javascript -->
+		<ItemGroup>
+			<OldJavaScriptFiles Include="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\*.min.js" />
+		</ItemGroup>
+		<Delete Files="@(OldJavaScriptFiles)" />
+
+		<ItemGroup>
+			<JavaScriptFiles Include="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\**\*.js" Exclude="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\*.min.js" />
+			<!-- do not include js files in the js 'root'; put your code in subdirs -->
+			<JavaScriptFiles Remove="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\*.js" />			
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterMinifyJavaScript" />	
+	<Target Name="CoreMinifyJavaScript" Inputs="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryDirectory">
+
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="%(JavaScriptFiles.Directory)" String2="\">
+			<Output ItemName="JavaScriptOutputDirectoryParts" TaskParameter="Strings" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(JavaScriptOutputDirectoryParts)">
+            <Output TaskParameter="OutputItems" ItemName="JavaScriptSubDirectory" />
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
+
+		<CompressorTask
+			JavaScriptFiles="@(JavaScriptFiles)"
+			JavaScriptOutputFile="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)..\@(JavaScriptSubDirectory)-$(BuildVersion).min.js"
+			ObfuscateJavaScript="True"
+			PreserveAllSemicolons="False"
+			DisableOptimizations="Nope"
+			EncodingType="UTF8"
+			DeleteJavaScriptFiles="false"
+			LineBreakPosition="-1"
+			LoggingType="ALittleBit"
+			ThreadCulture="en-US"
+			IsEvalIgnored="false"
+			/>
+	</Target>
+
+	<Target Name="MinifyCss" DependsOnTargets="BeforeMinifyCssPre;BeforeMinifyCss;BeforeMinifyCssPost;CoreMinifyCss;AfterMinifyCssPre;AfterMinifyCss;AfterMinifyCssPost" />
+	<Target Name="BeforeMinifyCss">
+		<!-- remove previously minified css -->
+		<ItemGroup>
+			<OldCssFiles Include="$(SourceDirectory)**\$(CssDirectoryConventionName)\**\*.min.css" />
+		</ItemGroup>
+		<Delete Files="@(OldCssFiles)" />
+
+		<ItemGroup>
+			<CssFiles Include="$(SourceDirectory)**\$(CssDirectoryConventionName)\**\*.css" Exclude="$(SourceDirectory)**\$(CssDirectoryConventionName)\**\*.min.css" />
+			<!-- do not include css files in the css 'root'; put your code in subdirs (it should only contain stuff like _constants.scss) -->
+			<CssFiles Remove="$(SourceDirectory)**\$(CssDirectoryConventionName)\*.css" />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterMinifyCss" />	
+	<Target Name="CoreMinifyCss" Inputs="%(CssFiles.RootDir)%(CssFiles.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryDirectory">
+
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="%(CssFiles.Directory)" String2="\">
+			<Output ItemName="CssOutputDirectoryParts" TaskParameter="Strings" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(CssOutputDirectoryParts)">
+            <Output TaskParameter="OutputItems" ItemName="CssSubDirectory" />
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
+
+		<CompressorTask
+			CssFiles="@(CssFiles)"
+			CssOutputFile="%(CssFiles.RootDir)%(CssFiles.Directory)@(CssSubDirectory)-$(BuildVersion).min.css"
+			CssCompressionType="YuiStockCompression"
+			PreserveAllSemicolons="False"
+			DisableOptimizations="Nope"
+			EncodingType="UTF8"
+			DeleteCssFiles="false"
+			LineBreakPosition="-1"
+			LoggingType="ALittleBit"
+			ThreadCulture="en-US"
+			IsEvalIgnored="false"
+			/>
+	</Target>
+
+	<Target Name="PublishFlash" DependsOnTargets="BeforePublishFlashPre;BeforePublishFlash;BeforePublishFlashPost;CorePublishFlash;AfterPublishFlashPre;AfterPublishFlash;AfterPublishFlashPost" />
+	<Target Name="BeforePublishFlash">
+		<ItemGroup>
+			<FlashProjects Include="$(FlashSourceDirectory)**\*.$(FlashProjectDirectoryConventionName)\*" />
+			<FlashProjectDirs Include="@(FlashProjects->'%(RelativeDir)')" />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterPublishFlash" />	
+	<Target Name="CorePublishFlash" Inputs="%(FlashProjectDirs.RootDir)%(FlashProjectDirs.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryDirectory">
+
+		<!-- get rid of the trailing slash -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(FlashProjectDirs.RelativeDir)\" OldValue="\\" NewValue="">
+            <Output PropertyName="TrimmedFlashProjectDirectory" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+
+		<!-- get the last directory name -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="$(TrimmedFlashProjectDirectory)" String2="\">
+			<Output ItemName="FlashProjectDirsParts" TaskParameter="Strings" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(FlashProjectDirsParts)">
+            <Output TaskParameter="OutputItems" ItemName="FlashProjectDirNameOutput" />
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
+		<PropertyGroup>
+			<FlashProjectDirName>@(FlashProjectDirNameOutput)</FlashProjectDirName>
+		</PropertyGroup>
+
+		<!-- resolve the same directory tree within SourceDirectory -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(FlashProjectDirs.RelativeDir)" OldValue="$(FlashSourceDirectory)" NewValue="$(CSharpSourceDirectory)">
+            <Output PropertyName="RelativeSwfTargetDirectory" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<ConvertToAbsolutePath Paths="$(RelativeSwfTargetDirectory)../">
+			<Output TaskParameter="AbsolutePaths" PropertyName="SwfTargetDirectory" />
+		</ConvertToAbsolutePath>
+
+        <Error Text="Target path $(SwfTargetDirectory) doesn't exists. Put your as3proj file in a similar directory structure inside $(FlashSourceDirectory) as the one in $(CSharpSourceDirectory) to publish to." Condition=" !Exists('$(SwfTargetDirectory)') " />
+
+		<PropertyGroup>
+			<SwfTargetFile>$(SwfTargetDirectory)$(FlashProjectDirName).$(BuildVersion).swf</SwfTargetFile>
+		</PropertyGroup>
+
+		<Message Text="Publishing %(FlashProjectDirs.RelativeDir) to $(SwfTargetFile)" Importance="high" />
+
+		<ConvertToAbsolutePath Paths="%(FlashProjectDirs.RootDir)%(FlashProjectDirs.Directory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="WorkingDir" />
+		</ConvertToAbsolutePath>
+
+		<PropertyGroup>
+			<BuildPropertiesFile>%(FlashProjectDirs.RootDir)%(FlashProjectDirs.Directory)build-properties.xml</BuildPropertiesFile>
+		</PropertyGroup>
+
+		<!-- fetch flash project specific variables from build-properties.xml -->
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashAutoBuild[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashAutoBuild" />
+		</XmlPeek>		
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashSrcDirectories/FlashSrcDirectory/text()">
+			<Output TaskParameter="Result" ItemName="FlashSrcDirectories" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashLibDirectories/FlashLibDirectory/text()">
+			<Output TaskParameter="Result" ItemName="FlashLibDirectories" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashEntryPointFile[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashEntryPointFile" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashBackgroundColor[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashBackgroundColor" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashFrameRate[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashFrameRate" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashWidth[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashWidth" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashHeight[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashHeight" />
+		</XmlPeek>
+
+		<!-- remove old versions of published swfs -->
+		<ItemGroup>
+			<OldSwfsToDelete Remove="@(OldSwfsToDelete)" />
+			<OldSwfsToDelete Include="$(SwfTargetDirectory)$(FlashProjectDirName).*.swf" />
+		</ItemGroup>
+
+		<Delete Files="@(OldSwfsToDelete)" Condition=" @(FlashAutoBuild) != 'False' " />
+
+		<!-- compile flash and output to SwfTargetFile -->		
+		<Exec WorkingDirectory="$(WorkingDir)" Command="&quot;$(FlexSdkPath)&quot; -static-link-runtime-shared-libraries=true -library-path+=@(FlashLibDirectories,' -library-path+=') -compiler.incremental=false -debug=false -default-background-color=0x@(FlashBackgroundColor) -default-frame-rate=@(FlashFrameRate) -default-size @(FlashWidth) @(FlashHeight) -source-path=@(FlashSrcDirectories,' -source-path+=') &quot;$(WorkingDir)@(FlashEntryPointFile)&quot; -o &quot;$(SwfTargetFile)&quot; -use-network=true" CustomWarningRegularExpression="Warning|Waarschuwing" CustomErrorRegularExpression="Error|Fout" Condition=" @(FlashAutoBuild) != 'False' " />
+
+	</Target>
+	
+	<Target Name="ReleaseWebsites" DependsOnTargets="BeforeReleaseWebsitesPre;BeforeReleaseWebsites;BeforeReleaseWebsitesPost;CoreReleaseWebsites;AfterReleaseWebsitesPre;AfterReleaseWebsites;AfterReleaseWebsitesPost" />
+	<Target Name="BeforeReleaseWebsites">
+		<ItemGroup>
+			<WebsitesToRelease Include="$(SourceDirectory)**\*.$(WebsiteProjectConventionName).csproj" />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterReleaseWebsites" />
+	<Target Name="CoreReleaseWebsites" Inputs="%(WebsitesToRelease.RootDir)%(WebsitesToRelease.Directory)%(WebsitesToRelease.Environment)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+
+		<PropertyGroup>
+			<ProjectSourceDirectory>%(WebsitesToRelease.RootDir)%(WebsitesToRelease.Directory)</ProjectSourceDirectory>
+		</PropertyGroup>
+
+		<!-- resolve the temporary release directory -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(WebsitesToRelease.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
+            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<ConvertToAbsolutePath Paths="$(ReleaseTempDirectory)$(RelativeProjectReleaseDirectory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="ProjectReleaseDirectory" />
+		</ConvertToAbsolutePath>
+
+		<!-- let aspnetcompiler precompile the project (if it has a web.config, which it should) -->
+		<AspNetCompiler VirtualPath="/" PhysicalPath="$(ProjectSourceDirectory)" TargetPath="$(ProjectReleaseDirectory)" Updateable="$(CreateUpdateableAspxFilesInRelease)" Condition=" Exists('$(ProjectSourceDirectory)Web.config') " />
+
+		<!-- remove project files and web.config transform files from release directory -->
+		<ItemGroup>
+			<FilesToRemoveFromReleaseDirectory Remove="@(FilesToRemoveFromReleaseDirectory)" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.csproj*" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)packages.config" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.settings" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.scss" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)Web.*.config" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.snk" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)obj\**\*" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)_ReSharper*\**\*" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*ReSharper*" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.sln" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory).svn\**\*" />
+		</ItemGroup>
+		<Delete Files="@(FilesToRemoveFromReleaseDirectory)" />
+
+		<!-- update version number inside js and css files -->
+		<ItemGroup>
+			<AllStaticFiles Remove="@(AllStaticFiles)" />
+			<AllStaticFiles Include="$(ProjectReleaseDirectory)$(CssDirectoryConventionName)\**\*.css" />
+			<AllStaticFiles Include="$(ProjectReleaseDirectory)$(JavascriptDirectoryConventionName)\**\*.js" />
+		</ItemGroup>
+		<Attrib ReadOnly="false" Files="@(AllStaticFiles)" />
+	    <FileUpdate Files="@(AllStaticFiles)" Regex="1\.0\.0\.0" ReplacementText="$(BuildVersion)" Condition=" @(AllStaticFiles) != '' " />
+
+		<!-- optimize all jpegs -->
+		<ItemGroup>
+			<AllJpegFiles Remove="@(AllJpegFiles)" />
+			<AllJpegFiles Include="$(ProjectReleaseDirectory)**\*.jpg" />
+			<AllJpegFiles Include="$(ProjectReleaseDirectory)**\*.jpeg" />
+		</ItemGroup>		
+		<Exec Command="&quot;$(JpegtranPath)&quot; -progressive -optimize &quot;%(AllJpegFiles.FullPath)&quot; &quot;%(AllJpegFiles.FullPath)&quot;" Condition=" @(AllJpegFiles) != '' " />
+		
+		<!-- optimize all pngs -->
+		<ItemGroup>
+			<AllPngFiles Remove="@(AllPngFiles)" />
+			<AllPngFiles Include="$(ProjectReleaseDirectory)**\*.png" />
+		</ItemGroup>		
+		<Exec Command="&quot;$(OptiPngPath)&quot; &quot;%(AllPngFiles.FullPath)&quot;" Condition=" @(AllPngFiles) != '' " />
+		
+		<!-- determine all environments from web.*.config -->
+		<ItemGroup>
+			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)Web.$(ConfigurationsToRelease).config" />
+		</ItemGroup>
+		<ItemGroup>
+			<AllEnvironments Remove="@(AllEnvironments)" />
+			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+		</ItemGroup>
+
+		<!-- remove part of the filename so the environment name is left -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="Web." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
+			<Output ItemName="_AllEnvironmentTransforms" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(_AllEnvironmentTransforms.Identity)" OldValue="web." NewValue="" Condition=" @(_AllEnvironmentTransforms) != '' " >
+			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+
+		<!-- copy everything from temp directory to release directory and then remove temp directory; this is to ensure no empty directories end up in the release -->
+		<ItemGroup>
+			<FilesToMove Remove="@(FilesToMove)" />
+			<FilesToMove Include="$(ReleaseTempDirectory)**">
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</FilesToMove>
+		</ItemGroup>
+
+		<!-- copy files to a separate directory for each environment and update version number in filenames -->
+		<Copy SourceFiles="@(FilesToMove)" DestinationFiles="$(ReleaseDirectory)%(FilesToMove.Environment)\%(FilesToMove.RecursiveDir)$([System.String]::Copy('%(FilesToMove.Filename)').Replace('1.0.0.0',$(BuildVersion)))%(FilesToMove.Extension)" />		
+		
+		<!-- transform config for all environments -->
+		<TransformXml Source="$(ProjectSourceDirectory)Web.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\Web.config" Transform="$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config') " />
+
+		<!-- remove temporary directory -->
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(ReleaseTempDirectory)" Condition=" Exists('$(ReleaseTempDirectory)') " />
+		<RemoveDir Directories="$(ReleaseTempDirectory)" />
+
+	</Target>
+
+	<Target Name="ReleaseWebServices" DependsOnTargets="BeforeReleaseWebServicesPre;BeforeReleaseWebServices;BeforeReleaseWebServicesPost;CoreReleaseWebServices;AfterReleaseWebServicesPre;AfterReleaseWebServices;AfterReleaseWebServicesPost" />
+	<Target Name="BeforeReleaseWebServices">
+		<ItemGroup>
+			<WebServicesToRelease Include="$(SourceDirectory)**\*.$(WebServiceProjectConventionName).csproj" />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterReleaseWebServices" />
+	<Target Name="CoreReleaseWebServices" Inputs="%(WebServicesToRelease.RootDir)%(WebServicesToRelease.Directory)%(WebServicesToRelease.Environment)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+
+		<PropertyGroup>
+			<ProjectSourceDirectory>%(WebServicesToRelease.RootDir)%(WebServicesToRelease.Directory)</ProjectSourceDirectory>
+		</PropertyGroup>
+
+		<!-- resolve the temporary release directory -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(WebServicesToRelease.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
+            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<ConvertToAbsolutePath Paths="$(ReleaseTempDirectory)$(RelativeProjectReleaseDirectory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="ProjectReleaseDirectory" />
+		</ConvertToAbsolutePath>
+
+		<!-- if it has a web.config let aspnetcompiler precompile the project -->
+		<AspNetCompiler VirtualPath="/" PhysicalPath="$(ProjectSourceDirectory)" TargetPath="$(ProjectReleaseDirectory)" Updateable="$(CreateUpdateableAspxFilesInRelease)" Condition=" Exists('$(ProjectSourceDirectory)Web.config') " />
+
+		<!-- remove project files and web.config files from release directory -->
+		<ItemGroup>
+			<FilesToRemoveFromReleaseDirectory Remove="@(FilesToRemoveFromReleaseDirectory)" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.csproj*" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)packages.config" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.settings" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.scss" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)Web.*.config" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.snk" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)obj\**\*" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)_ReSharper*\**\*" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*ReSharper*" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.sln" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory).svn\**\*" />
+		</ItemGroup>
+		<Delete Files="@(FilesToRemoveFromReleaseDirectory)" />
+
+		<!-- determine all environments from web.*.config -->
+		<ItemGroup>
+			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)Web.$(ConfigurationsToRelease).config" />
+		</ItemGroup>
+		<ItemGroup>
+			<AllEnvironments Remove="@(AllEnvironments)" />
+			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+		</ItemGroup>
+
+		<!-- remove part of the filename so the environment name is left -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="Web." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
+			<Output ItemName="_AllEnvironmentTransforms" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(_AllEnvironmentTransforms.Identity)" OldValue="web." NewValue="" Condition=" @(_AllEnvironmentTransforms) != '' " >
+			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>		
+
+		<!-- copy everything from temp directory to release directory and then remove temp directory; this is to ensure no empty directories end up in the release -->
+		<ItemGroup>
+			<ReleaseFilesToCopy Remove="@(ReleaseFilesToCopy)" />
+			<ReleaseFilesToCopy Include="$(ReleaseTempDirectory)**" />
+		</ItemGroup>
+						
+		<Copy SourceFiles="@(ReleaseFilesToCopy)" DestinationFolder="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
+
+		<!-- transform config -->
+		<TransformXml Source="$(ProjectSourceDirectory)Web.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\Web.config" Transform="$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config') " />
+
+		<!-- remove temporary directory -->
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(ReleaseTempDirectory)" Condition=" Exists('$(ReleaseTempDirectory)') " />
+		<RemoveDir Directories="$(ReleaseTempDirectory)" />
+
+	</Target>
+
+	<Target Name="ReleaseConsoleApps" DependsOnTargets="BeforeReleaseConsoleAppsPre;BeforeReleaseConsoleApps;BeforeReleaseConsoleAppsPost;CoreReleaseConsoleApps;AfterReleaseConsoleAppsPre;AfterReleaseConsoleApps;AfterReleaseConsoleAppsPost" />
+	<Target Name="BeforeReleaseConsoleApps">
+		<ItemGroup>
+			<ConsoleAppsToRelease Include="$(SourceDirectory)**\*.$(ConsoleAppProjectConventionName).csproj" />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterReleaseConsoleApps" />
+	<Target Name="CoreReleaseConsoleApps" Inputs="%(ConsoleAppsToRelease.RootDir)%(ConsoleAppsToRelease.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+
+		<PropertyGroup>
+			<ProjectSourceDirectory>%(ConsoleAppsToRelease.RootDir)%(ConsoleAppsToRelease.Directory)</ProjectSourceDirectory>
+		</PropertyGroup>
+
+		<!-- resolve the release directory -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(ConsoleAppsToRelease.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
+            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+
+		<!-- determine all environments from app.*.config -->
+		<ItemGroup>
+			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)App.$(ConfigurationsToRelease).config" />
+		</ItemGroup>
+		<ItemGroup>
+			<AllEnvironments Remove="@(AllEnvironments)" />
+			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+		</ItemGroup>
+
+		<!-- remove part of the filename so the environment name is left -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="App." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
+			<Output ItemName="_AllEnvironmentTransforms" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(_AllEnvironmentTransforms.Identity)" OldValue="app." NewValue="" Condition=" @(_AllEnvironmentTransforms) != '' " >
+			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+
+		<!-- copy all file from the bin directory to destination directory -->
+		<ItemGroup>
+			<ReleaseFilesToCopy Remove="@(ReleaseFilesToCopy)" />
+			<ReleaseFilesToCopy Include="$(ProjectSourceDirectory)bin\$(Configuration)\*" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(ReleaseFilesToCopy)" DestinationFolder="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
+
+		<!-- transform config -->
+		<TransformXml Source="$(ProjectSourceDirectory)App.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\App.config" Transform="$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config') " />
+
+	</Target>
+
+	<Target Name="ReleaseServices" DependsOnTargets="BeforeReleaseServicesPre;BeforeReleaseServices;BeforeReleaseServicesPost;CoreReleaseServices;AfterReleaseServicesPre;AfterReleaseServices;AfterReleaseServicesPost" />
+	<Target Name="BeforeReleaseServices">
+		<ItemGroup>
+			<ServicesToRelease Include="$(SourceDirectory)**\*.$(WindowsServiceProjectConventionName).csproj" />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterReleaseServices" />
+	<Target Name="CoreReleaseServices" Inputs="%(ServicesToRelease.RootDir)%(ServicesToRelease.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+
+		<PropertyGroup>
+			<ProjectSourceDirectory>%(ServicesToRelease.RootDir)%(ServicesToRelease.Directory)</ProjectSourceDirectory>
+		</PropertyGroup>
+
+		<!-- resolve the temporary release directory -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(ServicesToRelease.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
+            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+
+		<!-- determine all environments from app.*.config -->
+		<ItemGroup>
+			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)App.$(ConfigurationsToRelease).config" />
+		</ItemGroup>
+		<ItemGroup>
+			<AllEnvironments Remove="@(AllEnvironments)" />
+			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+		</ItemGroup>
+
+		<!-- remove part of the filename so the environment name is left -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="App." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
+			<Output ItemName="_AllEnvironmentTransforms" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(_AllEnvironmentTransforms.Identity)" OldValue="app." NewValue="" Condition=" @(_AllEnvironmentTransforms) != '' " >
+			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>		
+
+		<!-- copy all file from the bin directory to destination directory -->
+		<ItemGroup>
+			<ReleaseFilesToCopy Remove="@(ReleaseFilesToCopy)" />
+			<ReleaseFilesToCopy Include="$(ProjectSourceDirectory)bin\$(Configuration)\*" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(ReleaseFilesToCopy)" DestinationFolder="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
+
+		<!-- transform config -->
+		<TransformXml Source="$(ProjectSourceDirectory)App.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\App.config" Transform="$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config') " />
+
+	</Target>
+
+	<Target Name="ReleaseDatabases" DependsOnTargets="BeforeReleaseDatabasesPre;BeforeReleaseDatabases;BeforeReleaseDatabasesPost;CoreReleaseDatabases;AfterReleaseDatabasesPre;AfterReleaseDatabases;AfterReleaseDatabasesPost" />
+	<Target Name="BeforeReleaseDatabases">
+		<ItemGroup>
+			<DatabasesToRelease Include="$(SourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj" />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterReleaseDatabases" />
+	<Target Name="CoreReleaseDatabases" Inputs="%(DatabasesToRelease.RootDir)%(DatabasesToRelease.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+
+		<PropertyGroup>
+			<ProjectSourceDirectory>%(DatabasesToRelease.RootDir)%(DatabasesToRelease.Directory)</ProjectSourceDirectory>
+		</PropertyGroup>
+
+		<!-- resolve the temporary release directory -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(DatabasesToRelease.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
+            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+
+		<ItemGroup>
+			<ReleaseFilesToCopy Remove="@(ReleaseFilesToCopy)" />
+			<ReleaseFilesToCopy Include="$(ProjectSourceDirectory)sql\$(Configuration)\*" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(ReleaseFilesToCopy)" DestinationFolder="$(ReleaseDirectory)$(SuitedForAllEnvironmentsDirectoryName)\$(RelativeProjectReleaseDirectory)" />
+
+	</Target>
+
+	<Target Name="ReleaseWorkers" DependsOnTargets="BeforeReleaseWorkersPre;BeforeReleaseWorkers;BeforeReleaseWorkersPost;CoreReleaseWorkers;AfterReleaseWorkersPre;AfterReleaseWorkers;AfterReleaseWorkersPost" />
+	<Target Name="BeforeReleaseWorkers">
+		<ItemGroup>
+			<WorkersToRelease Include="$(SourceDirectory)**\*.$(WorkerProjectConventionName).csproj" />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterReleaseWorkers" />
+	<Target Name="CoreReleaseWorkers" Inputs="%(WorkersToRelease.RootDir)%(WorkersToRelease.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+
+		<PropertyGroup>
+			<ProjectSourceDirectory>%(WorkersToRelease.RootDir)%(WorkersToRelease.Directory)</ProjectSourceDirectory>
+			<ConfigTargetName>%(WorkersToRelease.Filename).dll.config</ConfigTargetName>
+		</PropertyGroup>
+
+		<!-- resolve the release directory -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(WorkersToRelease.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
+            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+
+		<!-- determine all environments from app.*.config -->
+		<ItemGroup>
+			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)App.$(ConfigurationsToRelease).config" />
+		</ItemGroup>
+		<ItemGroup>
+			<AllEnvironments Remove="@(AllEnvironments)" />
+			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+		</ItemGroup>
+
+		<!-- remove part of the filename so the environment name is left -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="App." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
+			<Output ItemName="_AllEnvironmentTransforms" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(_AllEnvironmentTransforms.Identity)" OldValue="app." NewValue="" Condition=" @(_AllEnvironmentTransforms) != '' " >
+			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+
+		<MakeDir Directories="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
+
+		<!-- transform config -->
+		<TransformXml Source="$(ProjectSourceDirectory)App.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)$(ConfigTargetName)" Transform="$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config') " />
+
+	</Target>
+
+	<Target Name="ReleaseAzure" DependsOnTargets="BeforeReleaseAzurePre;BeforeReleaseAzure;BeforeReleaseAzurePost;CoreReleaseAzure;AfterReleaseAzurePre;AfterReleaseAzure;AfterReleaseAzurePost" />
+	<Target Name="_BeforeReleaseAzure">
+		<ItemGroup>
+			<_AzureToRelease Include="$(SourceDirectory)**\*.$(AzureProjectConventionName).ccproj" />
+		</ItemGroup>
+	</Target>
+	<Target Name="BeforeReleaseAzure" Inputs="%(_AzureToRelease.RootDir)%(_AzureToRelease.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject" DependsOnTargets="_BeforeReleaseAzure">
+
+		<PropertyGroup>
+			<ProjectSourceDirectory>%(_AzureToRelease.RootDir)%(_AzureToRelease.Directory)</ProjectSourceDirectory>
+		</PropertyGroup>
+
+		<!-- determine all environments from ServiceConfiguration.*.cscfg -->
+		<ItemGroup>
+			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)ServiceConfiguration.$(ConfigurationsToRelease).cscfg" />
+		</ItemGroup>
+		<ItemGroup>
+			<AllEnvironments Remove="@(AllEnvironments)" />
+			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+		</ItemGroup>
+
+		<!-- remove part of the filename so the environment name is left -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="ServiceConfiguration." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
+			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>		
+	
+		<!-- not sure if this works properly if different azure projects have different environment transforms -->
+		<ItemGroup>
+			<AzureToRelease Include="@(_AzureToRelease)">
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</AzureToRelease>
+		</ItemGroup>
+			
+	</Target>
+	<Target Name="AfterReleaseAzure" />	
+	<Target Name="CoreReleaseAzure" Inputs="%(AzureToRelease.RootDir)%(AzureToRelease.Directory)%(AzureToRelease.Environment)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+
+		<PropertyGroup>
+			<ProjectSourceDirectory>%(AzureToRelease.RootDir)%(AzureToRelease.Directory)</ProjectSourceDirectory>
+		</PropertyGroup>
+
+		<!-- resolve the release directory -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AzureToRelease.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
+			<Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+		</MSBuild.ExtensionPack.Framework.TextString>	
+		
+		<!-- remove bin and obj folders -->
+		<ItemGroup>
+			<DirectoriesToRemove Remove="@(DirectoriesToRemove)" />
+			<DirectoriesToRemove Include="%(AzureToRelease.RelativeDir)obj" />
+			<DirectoriesToRemove Include="%(AzureToRelease.RelativeDir)bin" />
+		</ItemGroup>
+
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(DirectoriesToRemove.FullPath)" Condition=" Exists('%(DirectoriesToRemove.FullPath)') " />
+		<RemoveDir Directories="@(DirectoriesToRemove)" />
+
+		<!-- convert all relative directory paths to absolute paths -->
+		<ConvertToAbsolutePath Paths="$(SourceDirectory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteSourceDirectory" />
+		</ConvertToAbsolutePath>
+		<ConvertToAbsolutePath Paths="$(ReleaseDirectory)%(AzureToRelease.Environment)\">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteReleaseDirectory" />
+		</ConvertToAbsolutePath>
+		<ConvertToAbsolutePath Paths="$(CloudExtensionsDir)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteCloudExtensionsDir" />
+		</ConvertToAbsolutePath>
+		<ConvertToAbsolutePath Paths="$(ExtensionTasksPath)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteExtensionTasksPath" />
+		</ConvertToAbsolutePath>
+		
+		<!-- backup ServiceDefinition.csdef -->
+		<Copy SourceFiles="$(ProjectSourceDirectory)ServiceDefinition.csdef" DestinationFiles="$(ProjectSourceDirectory)ServiceDefinition.csdef.original" />
+
+		<!-- transform ServiceDefinition.csdef -->
+		<TransformXml Source="$(ProjectSourceDirectory)ServiceDefinition.csdef.original" Destination="$(ProjectSourceDirectory)ServiceDefinition.csdef" Transform="$(ProjectSourceDirectory)ServiceDefinition.%(AzureToRelease.Environment).csdef" Condition=" Exists('$(ProjectSourceDirectory)ServiceDefinition.%(AzureToRelease.Environment).csdef') " />
+
+		<!-- create the azure package, with transformed ServiceDefinition.csdef -->
+		<MsBuild Projects="%(AzureToRelease.FullPath)" Targets="Publish" Properties="$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);AbsoluteReleaseDirectory=$(AbsoluteReleaseDirectory)" />
+
+		<!-- copy the azure package and ServiceConfiguration.cscfg to release directory -->
+		<ItemGroup>
+			<ReleaseFilesToCopy Remove="@(ReleaseFilesToCopy)" />
+			<ReleaseFilesToCopy Include="$(ProjectSourceDirectory)bin\$(Configuration)\app.publish\**\*">
+				<Environment>%(AzureToRelease.Environment)</Environment>
+			</ReleaseFilesToCopy>
+		</ItemGroup>
+		<Copy SourceFiles="@(ReleaseFilesToCopy)" DestinationFolder="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)" />
+
+		<!-- transform ServiceConfiguration.cscfg for environment -->
+		<TransformXml Source="$(ProjectSourceDirectory)ServiceConfiguration.cscfg" Destination="$(ReleaseDirectory)%(AzureToRelease.Environment)\$(RelativeProjectReleaseDirectory)ServiceConfiguration.cscfg" Transform="$(ProjectSourceDirectory)ServiceConfiguration.%(AzureToRelease.Environment).cscfg" Condition=" Exists('$(ProjectSourceDirectory)ServiceConfiguration.%(AzureToRelease.Environment).cscfg') " />
+
+		<!-- restore ServiceDefinition.csdef -->
+		<Copy SourceFiles="$(ProjectSourceDirectory)ServiceDefinition.csdef.original" DestinationFiles="$(ProjectSourceDirectory)ServiceDefinition.csdef" Retries="30" RetryDelayMilliseconds="5000" />
+
+		<!-- delete ServiceDefinition.csdef.original -->
+		<Delete Files="$(ProjectSourceDirectory)ServiceDefinition.csdef.original" />
+
+	</Target>
+	
+	<Target Name="ReleaseStaticHtml" DependsOnTargets="BeforeReleaseStaticHtmlPre;BeforeReleaseStaticHtml;BeforeReleaseStaticHtmlPost;CoreReleaseStaticHtml;AfterReleaseStaticHtmlPre;AfterReleaseStaticHtml;AfterReleaseStaticHtmlPost" />
+	<Target Name="BeforeReleaseStaticHtml">
+		<ItemGroup>
+			<StaticHtmlToRelease Include="$(SourceDirectory)**\*.$(StaticHtmlProjectConventionName)\index.html" />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterReleaseStaticHtml" />
+	<Target Name="CoreReleaseStaticHtml" Inputs="%(StaticHtmlToRelease.RootDir)%(StaticHtmlToRelease.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+
+		<PropertyGroup>
+			<ProjectSourceDirectory>%(StaticHtmlToRelease.RootDir)%(StaticHtmlToRelease.Directory)</ProjectSourceDirectory>
+		</PropertyGroup>
+
+		<!-- resolve the temporary release directory -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(StaticHtmlToRelease.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
+            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<ConvertToAbsolutePath Paths="$(ReleaseTempDirectory)$(RelativeProjectReleaseDirectory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="ProjectReleaseDirectory" />
+		</ConvertToAbsolutePath>
+
+		<!-- copy all files from source to temporary release directory -->
+		<ItemGroup>
+			<SourceFiles Remove="@(SourceFiles)" />
+			<SourceFiles Include="$(ProjectSourceDirectory)**\*" />
+		</ItemGroup>				
+		
+		<Copy SourceFiles="@(SourceFiles)" DestinationFolder="$(ProjectReleaseDirectory)%(RecursiveDir)" />			
+		
+		<!-- update version number inside js and css files and all html files -->
+		<ItemGroup>
+			<AllStaticFiles Remove="@(AllStaticFiles)" />
+			<AllStaticFiles Include="$(ProjectReleaseDirectory)$(CssDirectoryConventionName)\**\*.css" />
+			<AllStaticFiles Include="$(ProjectReleaseDirectory)$(JavascriptDirectoryConventionName)\**\*.js" />
+			<AllStaticFiles Include="$(ProjectReleaseDirectory)**\*.html" />
+			<AllStaticFiles Include="$(ProjectReleaseDirectory)*.html" />
+		</ItemGroup>
+		<Attrib ReadOnly="false" Files="@(AllStaticFiles)" />
+	    <FileUpdate Files="@(AllStaticFiles)" Regex="1\.0\.0\.0" ReplacementText="$(BuildVersion)" Condition=" @(AllStaticFiles) != '' " />
+
+		<!-- determine all environments from web.*.config -->
+		<ItemGroup>
+			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)Web.$(ConfigurationsToRelease).config" />
+		</ItemGroup>
+		<ItemGroup>
+			<AllEnvironments Remove="@(AllEnvironments)" />
+			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+		</ItemGroup>
+
+		<!-- remove part of the filename so the environment name is left -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="Web." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
+			<Output ItemName="_AllEnvironmentTransforms" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(_AllEnvironmentTransforms.Identity)" OldValue="web." NewValue="" Condition=" @(_AllEnvironmentTransforms) != '' " >
+			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+
+		<!-- copy everything from temp directory to release directory and then remove temp directory; this is to ensure no empty directories end up in the release -->
+		<ItemGroup>
+			<FilesToMove Remove="@(FilesToMove)" />
+			<FilesToMove Include="$(ReleaseTempDirectory)**">
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</FilesToMove>
+		</ItemGroup>
+
+		<!-- copy files to a separate directory for each environment and update version number in filenames -->
+		<Copy SourceFiles="@(FilesToMove)" DestinationFiles="$(ReleaseDirectory)%(FilesToMove.Environment)\%(FilesToMove.RecursiveDir)$([System.String]::Copy('%(FilesToMove.Filename)').Replace('1.0.0.0',$(BuildVersion)))%(FilesToMove.Extension)" />		
+
+		<!-- remove temporary directory -->
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(ReleaseTempDirectory)" Condition=" Exists('$(ReleaseTempDirectory)') " />
+		<RemoveDir Directories="$(ReleaseTempDirectory)" />
+
+	</Target>
+	
+	<Target Name="BeforeRelease">
+		<!-- remove all release artifacts from previous releases -->
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(ReleaseDirectory)" Condition=" Exists('$(ReleaseDirectory)') " />
+
+		<!-- make sure we do a 'rebuild' instead of 'build' -->
+		<PropertyGroup>
+			<CompileTarget>Clean;Rebuild</CompileTarget>
+		</PropertyGroup>
+	</Target>
+	
+	<Target Name="AfterRelease">
+
+		<ItemGroup>
+			<AllProjectsToRelease Remove="@(AllProjectsToRelease)" />
+			<AllProjectsToRelease Include="@(WebsitesToRelease)" />
+			<AllProjectsToRelease Include="@(WebServicesToRelease)" />
+			<AllProjectsToRelease Include="@(ConsoleAppsToRelease)" />
+			<AllProjectsToRelease Include="@(ServicesToRelease)" />
+			<AllProjectsToRelease Include="@(DatabasesToRelease)" />
+			<AllProjectsToRelease Include="@(ReleaseWorkers)" />
+			<AllProjectsToRelease Include="@(AzureToRelease)" />
+			<AllProjectsToRelease Include="@(StaticHtmlToRelease)" />
+		</ItemGroup>
+
+		<!-- throw an error if there was nothing to release -->
+		<Error Text="There are no projects to be released!" Condition=" @(AllProjectsToRelease) == '' " />
+
+	</Target>
+	
+	<Target Name="DeployWebsite" DependsOnTargets="BeforeDeployWebsitePre;BeforeDeployWebsite;BeforeDeployWebsitePost;CoreDeployWebsite;AfterDeployWebsitePre;AfterDeployWebsite;AfterDeployWebsitePost" />
+	<Target Name="BeforeDeployWebsite">
+		<ItemGroup>
+			<_WebsitesToDeploy Include="$(SourceDirectory)**\*.$(WebsiteProjectConventionName).csproj" />
+			<WebsitesToDeploy Include="@(_WebsitesToDeploy)" Condition = " %(_WebsitesToDeploy.Filename) == $(ProjectToDeploy) " />
+		</ItemGroup>
+	</Target>	
+	<Target Name="AfterDeployWebsite" />
+	<Target Name="CoreDeployWebsite" Inputs="%(WebsitesToDeploy.RootDir)%(WebsitesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+		<!-- call targets 'Deploy' with parameters '/p:DeployEnvironment=<environment to deploy to>;ProjectToDeploy=<project filename without extension>;DeployServer=<server - with msdeploy installed - to deploy to>;DeployTargetName=<iis sitename to update>;DeployUsername=<msdeploy user>;DeployPassword=<msdeploy password>' -->
+
+		<Error Condition = " '$(DeployEnvironment)' == '' " Text="Please set parameter DeployEnvironment to select the proper artifacts to deploy." />
+		
+		<!-- resolve the release directory -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(WebsitesToDeploy.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
+            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<ConvertToAbsolutePath Paths="$(ReleaseDirectory)$(DeployEnvironment)\$(RelativeProjectReleaseDirectory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="ProjectReleaseDirectory" />
+		</ConvertToAbsolutePath>
+		
+		<Error Condition = " !Exists('$(ProjectReleaseDirectory)') " Text="The artifacts at location $(ProjectReleaseDirectory) do not exist. Check if you performed a full release or you project has a config transform for this specific environment." />	
+
+		<Exec Command="&quot;$(MsDeployPath)&quot; -verb:sync -source:contentpath=&quot;$(ProjectReleaseDirectory)&quot; -dest:contentpath=&quot;$(DeployTargetName)&quot;,wmsvc=$(DeployServer),username=$(DeployUsername),password=$(DeployPassword) -allowUntrusted" />
+	</Target>
+
+	<Target Name="DeployWebService" DependsOnTargets="BeforeDeployWebServicePre;BeforeDeployWebService;BeforeDeployWebServicePost;CoreDeployWebService;AfterDeployWebServicePre;AfterDeployWebService;AfterDeployWebServicePost" />
+	<Target Name="BeforeDeployWebService">
+		<ItemGroup>
+			<_WebServicesToDeploy Include="$(SourceDirectory)**\*.$(WebServiceProjectConventionName).csproj" />
+			<WebServicesToDeploy Include="@(_WebServicesToDeploy)" Condition = " %(_WebServicesToDeploy.Filename) == $(ProjectToDeploy) " />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterDeployWebService" />
+	<Target Name="CoreDeployWebService" Inputs="%(WebServicesToDeploy.RootDir)%(WebServicesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+	</Target>
+
+	<Target Name="DeployConsoleApp" DependsOnTargets="BeforeDeployConsoleAppPre;BeforeDeployConsoleApp;BeforeDeployConsoleAppPost;CoreDeployConsoleApp;AfterDeployConsoleAppPre;AfterDeployConsoleApp;AfterDeployConsoleAppPost" />
+	<Target Name="BeforeDeployConsoleApp">
+		<ItemGroup>
+			<_ConsoleAppsToDeploy Include="$(SourceDirectory)**\*.$(ConsoleAppProjectConventionName).csproj" />
+			<ConsoleAppsToDeploy Include="@(_ConsoleAppsToDeploy)" Condition = " %(_ConsoleAppsToDeploy.Filename) == $(ProjectToDeploy) " />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterDeployConsoleApp" />
+	<Target Name="CoreDeployConsoleApp" Inputs="%(ConsoleAppsToDeploy.RootDir)%(ConsoleAppsToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+	</Target>
+
+	<Target Name="DeployService" DependsOnTargets="BeforeDeployServicePre;BeforeDeployService;BeforeDeployServicePost;CoreDeployService;AfterDeployServicePre;AfterDeployService;AfterDeployServicePost" />
+	<Target Name="BeforeDeployService">
+		<ItemGroup>
+			<_ServicesToDeploy Include="$(SourceDirectory)**\*.$(WindowsServiceProjectConventionName).csproj" />
+			<ServicesToDeploy Include="@(_ServicesToDeploy)" Condition = " %(_ServicesToDeploy.Filename) == $(ProjectToDeploy) " />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterDeployService" />
+	<Target Name="CoreDeployService" Inputs="%(ServicesToDeploy.RootDir)%(ServicesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+	</Target>
+
+	<Target Name="DeployDatabase" DependsOnTargets="BeforeDeployDatabasePre;BeforeDeployDatabase;BeforeDeployDatabasePost;CoreDeployDatabase;AfterDeployDatabasePre;AfterDeployDatabase;AfterDeployDatabasePost" />
+	<Target Name="BeforeDeployDatabase">
+		<ItemGroup>
+			<_DatabasesToDeploy Include="$(SourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj" />
+			<DatabasesToDeploy Include="@(_DatabasesToDeploy)" Condition = " %(_DatabasesToDeploy.Filename) == $(ProjectToDeploy) " />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterDeployDatabase" />
+	<Target Name="CoreDeployDatabase" Inputs="%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+		<!-- call targets 'Deploy' with parameters '/p:ProjectToDeploy=<database project filename without extension>;DeployServer=<database-server to deploy to>;DeployTargetName=<database name on the server to update>;DeployUsername=<msdeploy user>;DeployPassword=<msdeploy password>' -->
+
+		<PropertyGroup>
+			<DbSchemaPath>%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)sql\$(Configuration)\%(DatabasesToDeploy.Filename).dbschema</DbSchemaPath>
+			<DacPacPath>%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)sql\$(Configuration)\%(DatabasesToDeploy.Filename).dacpac</DacPacPath>
+		</PropertyGroup>
+
+		<!-- deploy vs2010 database project -->
+		<Exec Command="&quot;$(DbDeployPath)&quot; /a:Deploy /dsp:Sql /dd+ /model:&quot;$(DbSchemaPath)&quot; /cs:&quot;Server=$(DeployServer);User=$(DeployUsername);Password=$(DeployPassword);Pooling=false&quot; /p:TargetDatabase=&quot;$(DeployTargetName)&quot;" Condition=" Exists('$(DbSchemaPath)') " />
+
+		<!-- deploy data-tier application project -->
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="&quot;$(SqlPowershellPath)&quot; -f &quot;$(DacDeployScript)&quot; &quot;$(DacPacPath)&quot; &quot;$(DeployServer)&quot; &quot;$(DeployUsername)&quot; &quot;$(DeployPassword)&quot; &quot;$(DeployTargetName)&quot;" Condition=" Exists('$(DacPacPath)') " CustomErrorRegularExpression="^\[Exception^]" />
+
+	</Target>
+
+	<Target Name="DeployAzure" DependsOnTargets="BeforeDeployAzurePre;BeforeDeployAzure;BeforeDeployAzurePost;CoreDeployAzure;AfterDeployAzurePre;AfterDeployAzure;AfterDeployAzurePost" />
+	<Target Name="BeforeDeployAzure">
+		<ItemGroup>
+			<_AzureToDeploy Include="$(SourceDirectory)**\*.$(AzureProjectConventionName).ccproj" />
+			<AzureToDeploy Include="@(_AzureToDeploy)" Condition = " %(_AzureToDeploy.Filename) == $(ProjectToDeploy) " />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterDeployAzure" />
+	<Target Name="CoreDeployAzure" Inputs="%(AzureToDeploy.RootDir)%(AzureToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+		<!-- call targets 'Deploy' with parameters '/p:DeployEnvironment=<environment to deploy to>;ProjectToDeploy=<azure project filename without extension>;AzureSubscriptionID=<AzureSubscriptionID>;AzureCertificateFilename=<AzureCertificateFilename>;AzureCertificatePassword=<AzureCertificatePassword>;AzureHostedServiceName=<AzureHostedServiceName>;AzureStorageAccountName=<AzureStorageAccountName>;AzureStorageAccountKey=<AzureStorageAccountKey>;AzureSwapToProductionAfterDeploy=(True|False);AzureRemoveStagingAfterSwap=(True|False);AzureDisallowMultipleActiveInstances=(True|False)' -->
+
+		<Error Condition = " '$(DeployEnvironment)' == '' " Text="Please set parameter DeployEnvironment to select the proper artifacts to deploy." />
+		
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AzureToDeploy.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
+			<Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+		</MSBuild.ExtensionPack.Framework.TextString>
+		<ConvertToAbsolutePath Paths="$(ReleaseDirectory)$(DeployEnvironment)\$(RelativeProjectReleaseDirectory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="ProjectReleaseDirectory" />
+		</ConvertToAbsolutePath>
+		
+		<Error Condition = " !Exists('$(ProjectReleaseDirectory)') " Text="The artifacts at location $(ProjectReleaseDirectory) do not exist. Check if you performed a full release or you project has a config transform for this specific environment." />	
+		
+		<PropertyGroup>
+			<PackageLocation>$(ProjectReleaseDirectory)</PackageLocation>
+			<PackageName>%(AzureToDeploy.Filename).cspkg</PackageName>
+			<ServiceConfigName>ServiceConfiguration.cscfg</ServiceConfigName>
+		</PropertyGroup>
+
+		<!-- http://blogs.msdn.com/b/tomholl/archive/2011/02/23/using-msbuild-to-deploy-to-multiple-windows-azure-environments.aspx -->
+		<!-- http://code-inside.de/blog-in/2011/03/14/automatically-deployment-on-windows-azure-with-the-help-of-a-buildserver-via-powershell/ -->
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="$(PowershellPath) -f $(AzureDeployScript) $(AzureSubscriptionID) $(AzureCertificateFilename) $(AzureCertificatePassword) $(PackageLocation) $(PackageName) $(ServiceConfigName) $(AzureHostedServiceName) $(AzureStorageAccountName) $(AzureStorageAccountKey) $(BuildVersion) $(AzureSwapToProductionAfterDeploy) $(AzureRemoveStagingAfterSwap) $(AzureDisallowMultipleActiveInstances) " />
+
+	</Target>
+
+	<Target Name="AfterDeploy">
+
+		<ItemGroup>
+			<AllProjectsToDeploy Remove="@(AllProjectsToDeploy)" />
+			<AllProjectsToDeploy Include="@(WebsitesToDeploy)" />
+			<AllProjectsToDeploy Include="@(WebServicesToDeploy)" />
+			<AllProjectsToDeploy Include="@(ConsoleAppsToDeploy)" />
+			<AllProjectsToDeploy Include="@(ServicesToDeploy)" />
+			<AllProjectsToDeploy Include="@(DatabasesToDeploy)" />
+			<AllProjectsToDeploy Include="@(AzureToDeploy)" />
+		</ItemGroup>
+
+		<PropertyGroup>
+			<OneOrMoreProjectsDeployed>False</OneOrMoreProjectsDeployed>
+			<OneOrMoreProjectsDeployed Condition=" %(AllProjectsToDeploy.Filename) == $(ProjectToDeploy) ">True</OneOrMoreProjectsDeployed>
+		</PropertyGroup>		
+
+		<!-- throw an error if there was nothing to deploy -->
+		<Error Text="There are no projects to be deployed!" Condition=" $(OneOrMoreProjectsDeployed) == False " />
+
+	</Target>
+	
+	<Target Name="DeleteAzure" DependsOnTargets="BeforeDeleteAzurePre;BeforeDeleteAzure;BeforeDeleteAzurePost;CoreDeleteAzure;AfterDeleteAzurePre;AfterDeleteAzure;AfterDeleteAzurePost" />
+	<Target Name="BeforeDeleteAzure">
+		<ItemGroup>
+			<_AzureToDelete Include="$(SourceDirectory)**\*.$(AzureProjectConventionName).ccproj" />
+			<AzureToDelete Include="@(_AzureToDelete)" Condition = " %(_AzureToDelete.Filename) == $(ProjectToDelete) " />
+		</ItemGroup>
+	</Target>
+	<Target Name="AfterDeleteAzure" />
+	<Target Name="CoreDeleteAzure" Inputs="%(AzureToDelete.RootDir)%(AzureToDelete.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+		<!-- call targets 'Delete' with parameters 'ProjectToDelete=<azure project filename without extension>;AzureSubscriptionID=<AzureSubscriptionID>;AzureCertificateFilename=<AzureCertificateFilename>;AzureCertificatePassword=<AzureCertificatePassword>;AzureHostedServiceName=<AzureHostedServiceName>;AzureHostedServiceSlot=<Staging|Production>' -->
+
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="$(PowershellPath) -f $(AzureDeleteScript) $(AzureSubscriptionID) $(AzureCertificateFilename) $(AzureCertificatePassword) $(AzureHostedServiceName) $(AzureHostedServiceSlot) " />
+
+	</Target>	
+	
+	<Target Name="AfterDelete">
+
+		<ItemGroup>
+			<AllProjectsToDelete Remove="@(AllProjectsToDelete)" />
+			<AllProjectsToDelete Include="@(AzureToDelete)" />
+		</ItemGroup>
+
+		<PropertyGroup>
+			<OneOrMoreProjectsDeleted>False</OneOrMoreProjectsDeleted>
+			<OneOrMoreProjectsDeleted Condition=" %(AllProjectsToDelete.Filename) == $(ProjectToDelete) ">True</OneOrMoreProjectsDeleted>
+		</PropertyGroup>		
+
+		<!-- throw an error if there was nothing to delete -->
+		<Error Text="There are no projects to be deleted!" Condition=" $(OneOrMoreProjectsDeleted) == False " />
+
+	</Target>
+
+	<Target Name="AnalyzeCode" DependsOnTargets="Build">
+		<!-- Include all assemblies that are generated from our own projects -->
+		<ItemGroup>
+			<ProjectsToAnalyze Include="$(SourceDirectory)**\*.csproj" />
+		</ItemGroup>
+		<ItemGroup>
+			<AssembliesToAnalyze Include="%(ProjectsToAnalyze.RootDir)%(ProjectsToAnalyze.Directory)bin\$(Configuration)\%(ProjectsToAnalyze.Filename).dll" Condition=" Exists('%(ProjectsToAnalyze.RootDir)%(ProjectsToAnalyze.Directory)bin\$(Configuration)\%(ProjectsToAnalyze.Filename).dll') " />
+			<AssembliesToAnalyze Include="%(ProjectsToAnalyze.RootDir)%(ProjectsToAnalyze.Directory)bin\%(ProjectsToAnalyze.Filename).dll" Condition=" Exists('%(ProjectsToAnalyze.RootDir)%(ProjectsToAnalyze.Directory)bin\%(ProjectsToAnalyze.Filename).dll') " />
+		</ItemGroup>
+
+		<!-- Run fxcop for AssembliesToAnalyze -->
+		<MSBuild.ExtensionPack.CodeQuality.FxCop TaskAction="Analyse" Files="@(AssembliesToAnalyze)" OutputFile="$(CodeAnalysisDirectory)FxCopReport.html" Rules="$(FxCopPath)Rules" FxCopPath="$(FxCopPath)FxCopCmd.exe" ShowSummary="true" LogToConsole="false" ReportXsl="$(FxCopPath)Xml\FxCopReport.xsl" DependencyDirectories="$(BinDirectory)" />
+	</Target>
+
+	<Target Name="Build" DependsOnTargets="Compile" />
+    <Target Name="BuildAndRunUnitTests" DependsOnTargets="Build;RunUnitTests" />
+    <Target Name="BuildAndRunIntegrationTests" DependsOnTargets="Build;RunIntegrationTests" />
+    <Target Name="BuildAndRunAllTests" DependsOnTargets="Build;RunUnitTests;RunIntegrationTests" />
+
+    <Target Name="Minify" DependsOnTargets="MinifyJavaScript;MinifyCss" />
+	<Target Name="PublishAssets" DependsOnTargets="PublishFlash" />
+	<Target Name="Release" DependsOnTargets="BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseAzure;ReleaseStaticHtml;AfterRelease" />
+	<Target Name="BuildAndRunUnitTestsAndRelease" DependsOnTargets="BeforeRelease;BuildAndRunUnitTests;Release" />
+
+	<Target Name="Deploy" DependsOnTargets="DeployWebsite;DeployWebService;DeployConsoleApp;DeployService;DeployDatabase;DeployAzure;AfterDeploy" />
+	<Target Name="Delete" DependsOnTargets="DeleteAzure;AfterDeploy" />
+
+	<Import Project="targets-repository-specific.msbuild" />
+	
+</Project>
