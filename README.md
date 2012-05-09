@@ -1,7 +1,7 @@
 msbuild-by-convention
 =====================
 
-MSBuild-based set of build scripts that do everything by a set of conventions.
+MSBuild based set of build scripts that favors convention over configuration. This is done by giving your projects specific names.
 
 This content is released under the https://github.com/JorritSalverda/msbuild-by-convention/blob/master/Build/Scripts/LICENSE.txt MIT License.
 
