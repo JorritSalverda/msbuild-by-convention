@@ -1,5 +1,8 @@
+
+<!-- originally posted at https://github.com/JorritSalverda/msbuild-by-convention/ -->
+
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    
+	
 	<PropertyGroup>
 		<!-- common directories -->
 		<BaseDirectory Condition=" '$(BaseDirectory)' == '' ">..\..\</BaseDirectory>

@@ -1,3 +1,6 @@
+
+<!-- originally posted at https://github.com/JorritSalverda/msbuild-by-convention/ -->
+
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
 	<Import Project="properties-convention-based.msbuild"/>
