@@ -33,7 +33,7 @@ ehthumbs.db
 Icon?
 Thumbs.db
 
-# MSBuild by convention additions #
+# https://github.com/JorritSalverda/msbuild-by-convention additions #
 ######################
 bin/*
 Bin/*
