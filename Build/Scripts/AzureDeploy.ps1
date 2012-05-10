@@ -1,3 +1,6 @@
+
+# originally posted at https://github.com/JorritSalverda/msbuild-by-convention/
+
 $error.clear()
 $subscriptionId = $args[0]
 

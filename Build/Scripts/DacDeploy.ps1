@@ -1,3 +1,6 @@
+
+# originally posted at https://github.com/JorritSalverda/msbuild-by-convention/
+
 $dacpacPath = $args[0]
 $deployServer = $args[1]
 $deployUsername = $args[2]
