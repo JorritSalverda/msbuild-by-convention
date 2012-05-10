@@ -5,6 +5,12 @@
 
 	<!-- this files contains a number of hooks where custom actions can be executed -->
 
+	<!-- CreateDirectories targets to override -->	
+	<Target Name="BeforeCreateDirectoriesPre" />
+	<Target Name="BeforeCreateDirectoriesPost" />
+	<Target Name="AfterCreateDirectoriesPre" />
+	<Target Name="AfterCreateDirectoriesPost" />
+	
 	<!-- Clean targets to override -->	
 	<Target Name="BeforeCleanPre" />
 	<Target Name="BeforeCleanPost" />
@@ -22,6 +28,12 @@
 	<Target Name="BeforeSetAssemblyFileVersionPost" />
 	<Target Name="AfterSetAssemblyFileVersionPre" />	
 	<Target Name="AfterSetAssemblyFileVersionPost" />	
+
+	<!-- ReplaceProjectImportStatements targets to override -->	
+	<Target Name="BeforeReplaceProjectImportStatementsPre" />
+	<Target Name="BeforeReplaceProjectImportStatementsPost" />
+	<Target Name="AfterReplaceProjectImportStatementsPre" />	
+	<Target Name="AfterReplaceProjectImportStatementsPost" />	
 	
 	<!-- Compile targets to override -->	
 	<Target Name="BeforeCompilePre" />

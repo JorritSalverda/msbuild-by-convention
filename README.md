@@ -2,7 +2,7 @@
 
 MSBuild based set of build scripts that favors convention over configuration. This is done by giving your projects specific names.
 
-This content is released under the https://github.com/JorritSalverda/msbuild-by-convention/blob/master/LICENSE MIT License.
+This content is released under the https://github.com/JorritSalverda/msbuild-by-convention/blob/master/Build/Scripts/LICENSE MIT License.
 
 ### Get started:
   

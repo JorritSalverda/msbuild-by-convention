@@ -1,0 +1,14 @@
+
+-r:16  <UsingTask TaskName="DBBuildTask" AssemblyFile="$(AbsoluteBuildToolsDirectory)VisualStudio.v10.0.TeamData\Microsoft.Data.Schema.Tasks.dll"/>
++r:16  <UsingTask TaskName="DBBuildTask" AssemblyName="Microsoft.Data.Schema.Tasks, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"/>
+-r:17  <UsingTask TaskName="DBSetupDeployTask" AssemblyFile="$(AbsoluteBuildToolsDirectory)VisualStudio.v10.0.TeamData\Microsoft.Data.Schema.Tasks.dll"/>
++r:17  <UsingTask TaskName="DBSetupDeployTask" AssemblyName="Microsoft.Data.Schema.Tasks, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"/>
+-r:18  <UsingTask TaskName="DBDeployTask" AssemblyFile="$(AbsoluteBuildToolsDirectory)VisualStudio.v10.0.TeamData\Microsoft.Data.Schema.Tasks.dll"/>
++r:18  <UsingTask TaskName="DBDeployTask" AssemblyName="Microsoft.Data.Schema.Tasks, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"/>
+-r:19  <UsingTask TaskName="DataGeneratorTask" AssemblyFile="$(AbsoluteBuildToolsDirectory)VisualStudio.v10.0.TeamData\Microsoft.Data.Schema.Tasks.dll"/>
++r:19  <UsingTask TaskName="StaticCodeAnalysisTask" AssemblyFile="$(AbsoluteBuildToolsDirectory)VisualStudio.v10.0.TeamData\Microsoft.Data.Schema.Tasks.dll"/>
+-r:20  <UsingTask TaskName="DataGeneratorTask" AssemblyName="Microsoft.Data.Schema.Tasks, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"/>
++r:20  <UsingTask TaskName="StaticCodeAnalysisTask" AssemblyName="Microsoft.Data.Schema.Tasks, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"/>
+
+-r:27  $(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\TeamData\Microsoft.Data.Schema.Common.targets
++r:27  $(AbsoluteBuildToolsDirectory)VisualStudio.v10.0.TeamData\Microsoft.Data.Schema.Common.targets

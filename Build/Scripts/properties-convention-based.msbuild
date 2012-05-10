@@ -42,6 +42,7 @@
 		<JMeterToolPath>$(BuildToolsDirectory)apache-jmeter-2.6\bin\jmeter</JMeterToolPath>
 		<JpegtranPath>$(BuildToolsDirectory)Jpegtran\jpegtran.exe</JpegtranPath>
 		<OptiPngPath>$(BuildToolsDirectory)optipng-0.7.1-win32\optipng.exe</OptiPngPath>
+		<VisualStudioTeamdataDir>$(BuildToolsDirectory)VisualStudio.v10.0.TeamData\</VisualStudioTeamdataDir>
 		
 		<!-- other properties -->
 		<BuildVersion Condition=" '$(BuildVersion)' == '' ">$(build_number)</BuildVersion>
@@ -113,5 +114,13 @@
 	
 	<!-- task for config transforms -->
 	<UsingTask TaskName="TransformXml" AssemblyFile="$(WebPublishingPath)" />
-						
+
+	<!-- directories to create if missing -->
+	<ItemGroup>
+		<DirectoriesToCreate Include="$(BinDirectory)" />
+		<DirectoriesToCreate Include="$(ReleaseDirectory)" />
+		<DirectoriesToCreate Include="$(TestResultsDirectory)" />
+		<DirectoriesToCreate Include="$(CodeAnalysisDirectory)" />
+	</ItemGroup>	
+	
 </Project>

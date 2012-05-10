@@ -1,0 +1,13 @@
+
+-r:5   <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\TeamData\Microsoft.Data.Schema.Common.targets" />
++r:5  <Import Project="Microsoft.Data.Schema.Common.targets" />
+
+-r:25  <UsingTask TaskName="DACCompilerTask" AssemblyName="Microsoft.SqlServer.Management.Dac.Tasks, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
++r:25 <UsingTask TaskName="DACCompilerTask" AssemblyFile="$(AbsoluteBuildToolsDirectory)VisualStudio.v10.0.TeamData\Microsoft.SqlServer.Management.Dac.Tasks.dll" />
+-r:26  <UsingTask TaskName="DACDeployTask" AssemblyName="Microsoft.SqlServer.Management.Dac.Tasks, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
++r:26  <UsingTask TaskName="DACDeployTask" AssemblyFile="$(AbsoluteBuildToolsDirectory)VisualStudio.v10.0.TeamData\Microsoft.SqlServer.Management.Dac.Tasks.dll" />
+-r:27  <UsingTask TaskName="SqlStaticCodeAnalysisTask" AssemblyName="Microsoft.Data.Schema.Tasks.Sql, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"/>
++r:27  <UsingTask TaskName="SqlStaticCodeAnalysisTask" AssemblyFile="$(AbsoluteBuildToolsDirectory)VisualStudio.v10.0.TeamData\Microsoft.Data.Schema.Tasks.Sql.dll" />
+
+-r:49       $(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\TeamData\Microsoft.Data.Schema.SqlTasks.targets
++r:49      $(AbsoluteBuildToolsDirectory)VisualStudio.v10.0.TeamData\Microsoft.Data.Schema.SqlTasks.targets

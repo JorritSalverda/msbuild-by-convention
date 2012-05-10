@@ -4,22 +4,20 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
 
 	<Import Project="properties-repository-specific.msbuild" />
+
+	<Target Name="CreateDirectories" DependsOnTargets="BeforeCreateDirectoriesPre;BeforeCreateDirectories;BeforeCreateDirectoriesPost;CoreCreateDirectories;AfterCreateDirectoriesPre;AfterCreateDirectories;AfterCreateDirectoriesPost" />
+	<Target Name="BeforeCreateDirectories" />
+	<Target Name="AfterCreateDirectories" />
+	<Target Name="CoreCreateDirectories">
+		<MakeDir Directories="@(DirectoriesToCreate)" />	  
+	</Target>	
 	
-	<Target Name="Clean" DependsOnTargets="BeforeCleanPre;BeforeClean;BeforeCleanPost;CoreClean;AfterCleanPre;AfterClean;AfterCleanPost" />
+	<Target Name="Clean" DependsOnTargets="BeforeCleanPre;BeforeClean;BeforeCleanPost;CoreClean;CreateDirectories;AfterCleanPre;AfterClean;AfterCleanPost" />
 	<Target Name="BeforeClean" />
 	<Target Name="AfterClean" />
 	<Target Name="CoreClean">
-		<ItemGroup>
-			<DirectoriesToClean Include="$(BinDirectory)" />
-			<DirectoriesToClean Include="$(ReleaseDirectory)" />
-			<DirectoriesToClean Include="$(TestResultsDirectory)" />
-			<DirectoriesToClean Include="$(CodeAnalysisDirectory)" />
-		</ItemGroup>
-
-		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(DirectoriesToClean.FullPath)" Condition=" Exists('%(DirectoriesToClean.FullPath)') " />
-
-		<RemoveDir Directories="@(DirectoriesToClean)" />
-		<MakeDir Directories="@(DirectoriesToClean)" />	  
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(DirectoriesToCreate.FullPath)" Condition=" Exists('%(DirectoriesToCreate.FullPath)') " />
+		<RemoveDir Directories="@(DirectoriesToCreate)" />
 	</Target>
 
 	<Target Name="CopyDependencies" DependsOnTargets="BeforeCopyDependenciesPre;BeforeCopyDependencies;BeforeCopyDependenciesPost;CoreCopyDependencies;AfterCopyDependenciesPre;AfterCopyDependencies;AfterCopyDependenciesPost" />
@@ -46,24 +44,44 @@
 	    <FileUpdate Files="@(AssemblyInfoFiles)" Regex="\[\s*assembly\s*:\s*AssemblyFileVersion\s*\(\s*&quot;[\d\.\*]+&quot;\s*\)\s*\]" ReplacementText="[assembly: AssemblyFileVersion(&quot;$(BuildVersion)&quot;)]" Condition=" @(AssemblyInfoFiles) != '' " />
 
 	</Target>
+	
+	<Target Name="ReplaceProjectImportStatements" DependsOnTargets="BeforeReplaceProjectImportStatementsPre;BeforeReplaceProjectImportStatements;BeforeReplaceProjectImportStatementsPost;CoreReplaceProjectImportStatements;AfterReplaceProjectImportStatementsPre;AfterReplaceProjectImportStatements;AfterReplaceProjectImportStatementsPost" />
+	<Target Name="BeforeReplaceProjectImportStatements" />
+	<Target Name="AfterReplaceProjectImportStatements" />
+	<Target Name="CoreReplaceProjectImportStatements" Condition=" Exists('$(VisualStudioTeamdataDir)Microsoft.Data.Schema.SqlTasks.targets') ">
+	
+		<!-- look for dbproj files and replace the import statement with one pointing to /build/tools/VisualStudio.v10.0.TeamData -->
+		<ItemGroup>
+			<DbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj" />
+		</ItemGroup>
+		<ConvertToAbsolutePath Paths="$(VisualStudioTeamdataDir)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteVisualStudioTeamdataDir" />
+		</ConvertToAbsolutePath>		
+		<Attrib ReadOnly="false" Files="@(DbProjectFiles)" />
+	    <FileUpdate Files="@(DbProjectFiles)" Regex="\$\(MSBuildExtensionsPath\)\\Microsoft\\VisualStudio\\v10\.0\\TeamData\\" ReplacementText="$(AbsoluteVisualStudioTeamdataDir)" Condition=" @(DbProjectFiles) != '' " />
+		
+	</Target>
 
-	<Target Name="Compile" DependsOnTargets="Clean;CopyDependencies;SetAssemblyFileVersion;BeforeCompilePre;BeforeCompile;BeforeCompilePost;CoreCompile;AfterCompilePre;AfterCompile;AfterCompilePost" />
+	<Target Name="Compile" DependsOnTargets="Clean;CopyDependencies;SetAssemblyFileVersion;ReplaceProjectImportStatements;BeforeCompilePre;BeforeCompile;BeforeCompilePost;CoreCompile;AfterCompilePre;AfterCompile;AfterCompilePost" />
 	<Target Name="BeforeCompile">
 		<!-- solutions that have a dependency order are specified in properties-repository-specific.msbuild; over here we add all solutions so it's not neccessary to list them all in properties-repository-specific.msbuild -->
 		<ItemGroup>
 			<SolutionsToBuild Include="$(CSharpSourceDirectory)**\*.sln" />
-		</ItemGroup>
+		</ItemGroup>				
 	</Target>
 	<Target Name="AfterCompile" />	
     <Target Name="CoreCompile" Inputs="%(SolutionsToBuild.RootDir)%(SolutionsToBuild.Directory)" Outputs="NonExistingOutputToTriggerTargetForEverySolution">
 
 		<Error Text="There are no solutions to compile!" Condition=" @(SolutionsToBuild) == '' " />
-
+		
 		<!-- build solution -->
-		<MSBuild Projects="%(SolutionsToBuild.FullPath)" Targets="$(CompileTarget)" Properties="$(BuildParameters)">
+		<ConvertToAbsolutePath Paths="$(BuildToolsDirectory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteBuildToolsDirectory" />
+		</ConvertToAbsolutePath>
+		<MSBuild Projects="%(SolutionsToBuild.FullPath)" Targets="$(CompileTarget)" Properties="$(BuildParameters);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory)">
 			<Output TaskParameter="TargetOutputs" ItemName="BuildOutput" />
-		</MSBuild>
-
+		</MSBuild>		
+		
 		<!-- compile views for all website and webservice projects -->
 		<ItemGroup>
 			<ProjectsToBuild Include="%(SolutionsToBuild.RootDir)%(SolutionsToBuild.Directory)**\*.$(WebsiteProjectConventionName).csproj" />
@@ -85,7 +103,7 @@
         <Copy SourceFiles="@(BuildOutput)" DestinationFolder="$(BinDirectory)" Condition = "%(Extension) == '.dll' Or %(Extension) == '.xml'" />
     </Target>
 
-	<Target Name="RunUnitTests" DependsOnTargets="BeforeRunUnitTestsPre;BeforeRunUnitTests;BeforeRunUnitTestsPost;CoreRunUnitTests;AfterRunUnitTestsPre;AfterRunUnitTests;AfterRunUnitTestsPost" />
+	<Target Name="RunUnitTests" DependsOnTargets="CreateDirectories;BeforeRunUnitTestsPre;BeforeRunUnitTests;BeforeRunUnitTestsPost;CoreRunUnitTests;AfterRunUnitTestsPre;AfterRunUnitTests;AfterRunUnitTestsPost" />
 	<Target Name="BeforeRunUnitTests" />
 	<Target Name="AfterRunUnitTests" />	
 	<Target Name="CoreRunUnitTests">
@@ -117,7 +135,7 @@
 		<Exec Command="$(MSpecRunnerPath) --teamcity --html $(TestResultsDirectory) @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " />
 	</Target>
 
-	<Target Name="RunIntegrationTests" DependsOnTargets="BeforeRunIntegrationTestsPre;BeforeRunIntegrationTests;BeforeRunIntegrationTestsPost;CoreRunIntegrationTests;AfterRunIntegrationTestsPre;AfterRunIntegrationTests;AfterRunIntegrationTestsPost" />
+	<Target Name="RunIntegrationTests" DependsOnTargets="CreateDirectories;BeforeRunIntegrationTestsPre;BeforeRunIntegrationTests;BeforeRunIntegrationTestsPost;CoreRunIntegrationTests;AfterRunIntegrationTestsPre;AfterRunIntegrationTests;AfterRunIntegrationTestsPost" />
 	<Target Name="BeforeRunIntegrationTests" />
 	<Target Name="AfterRunIntegrationTests" />	
 	<Target Name="CoreRunIntegrationTests">
@@ -972,16 +990,21 @@
 	<Target Name="CoreDeployDatabase" Inputs="%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
 		<!-- call targets 'Deploy' with parameters '/p:ProjectToDeploy=<database project filename without extension>;DeployServer=<database-server to deploy to>;DeployTargetName=<database name on the server to update>;DeployUsername=<msdeploy user>;DeployPassword=<msdeploy password>' -->
 
+		<!-- resolve the relative release directory -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(DatabasesToDeploy.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
+            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+				
 		<PropertyGroup>
-			<DbSchemaPath>%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)sql\$(Configuration)\%(DatabasesToDeploy.Filename).dbschema</DbSchemaPath>
-			<DacPacPath>%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)sql\$(Configuration)\%(DatabasesToDeploy.Filename).dacpac</DacPacPath>
+			<DbSchemaPath>$(ReleaseDirectory)$(SuitedForAllEnvironmentsDirectoryName)\$(RelativeProjectReleaseDirectory)\%(DatabasesToDeploy.Filename).dbschema</DbSchemaPath>
+			<DacPacPath>$(ReleaseDirectory)$(SuitedForAllEnvironmentsDirectoryName)\$(RelativeProjectReleaseDirectory)\%(DatabasesToDeploy.Filename).dacpac</DacPacPath>
 		</PropertyGroup>
 
 		<!-- deploy vs2010 database project -->
 		<Exec Command="&quot;$(DbDeployPath)&quot; /a:Deploy /dsp:Sql /dd+ /model:&quot;$(DbSchemaPath)&quot; /cs:&quot;Server=$(DeployServer);User=$(DeployUsername);Password=$(DeployPassword);Pooling=false&quot; /p:TargetDatabase=&quot;$(DeployTargetName)&quot;" Condition=" Exists('$(DbSchemaPath)') " />
 
 		<!-- deploy data-tier application project -->
-		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="&quot;$(SqlPowershellPath)&quot; -f &quot;$(DacDeployScript)&quot; &quot;$(DacPacPath)&quot; &quot;$(DeployServer)&quot; &quot;$(DeployUsername)&quot; &quot;$(DeployPassword)&quot; &quot;$(DeployTargetName)&quot;" Condition=" Exists('$(DacPacPath)') " CustomErrorRegularExpression="^\[Exception^]" />
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="&quot;$(SqlPowershellPath)&quot; -f &quot;$(DacDeployScript)&quot; &quot;$(DacPacPath)&quot; &quot;$(DeployServer)&quot; &quot;$(DeployUsername)&quot; &quot;$(DeployPassword)&quot; &quot;$(DeployTargetName)&quot;" Condition=" Exists('$(DacPacPath)') " CustomErrorRegularExpression="^[Exception^]" />
 
 	</Target>
 
@@ -1094,7 +1117,7 @@
 
     <Target Name="Minify" DependsOnTargets="MinifyJavaScript;MinifyCss" />
 	<Target Name="PublishAssets" DependsOnTargets="PublishFlash" />
-	<Target Name="Release" DependsOnTargets="BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseAzure;ReleaseStaticHtml;AfterRelease" />
+	<Target Name="Release" DependsOnTargets="CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseAzure;ReleaseStaticHtml;AfterRelease" />
 	<Target Name="BuildAndRunUnitTestsAndRelease" DependsOnTargets="BeforeRelease;BuildAndRunUnitTests;Release" />
 
 	<Target Name="Deploy" DependsOnTargets="DeployWebsite;DeployWebService;DeployConsoleApp;DeployService;DeployDatabase;DeployAzure;AfterDeploy" />
