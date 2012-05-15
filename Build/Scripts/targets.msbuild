@@ -393,6 +393,7 @@
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.settings" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.scss" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)Web.*.config" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)App.*.config" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.snk" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)obj\**\*" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)_ReSharper*\**\*" />
@@ -456,9 +457,12 @@
 		<!-- copy files to a separate directory for each environment and update version number in filenames -->
 		<Copy SourceFiles="@(FilesToMove)" DestinationFiles="$(ReleaseDirectory)%(FilesToMove.Environment)\%(FilesToMove.RecursiveDir)$([System.String]::Copy('%(FilesToMove.Filename)').Replace('1.0.0.0',$(BuildVersion)))%(FilesToMove.Extension)" />		
 		
-		<!-- transform config for all environments -->
+		<!-- transform web.config -->
 		<TransformXml Source="$(ProjectSourceDirectory)Web.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\Web.config" Transform="$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config') " />
 
+		<!-- transform app.config -->
+		<TransformXml Source="$(ProjectSourceDirectory)App.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\App.config" Transform="$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config') " />	
+		
 		<!-- remove temporary directory -->
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(ReleaseTempDirectory)" Condition=" Exists('$(ReleaseTempDirectory)') " />
 		<RemoveDir Directories="$(ReleaseTempDirectory)" />
@@ -497,6 +501,7 @@
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.settings" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.scss" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)Web.*.config" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)App.*.config" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.snk" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)obj\**\*" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)_ReSharper*\**\*" />
@@ -533,9 +538,12 @@
 						
 		<Copy SourceFiles="@(ReleaseFilesToCopy)" DestinationFolder="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
 
-		<!-- transform config -->
+		<!-- transform web.config -->
 		<TransformXml Source="$(ProjectSourceDirectory)Web.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\Web.config" Transform="$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config') " />
 
+		<!-- transform app.config -->
+		<TransformXml Source="$(ProjectSourceDirectory)App.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\App.config" Transform="$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config') " />	
+		
 		<!-- remove temporary directory -->
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(ReleaseTempDirectory)" Condition=" Exists('$(ReleaseTempDirectory)') " />
 		<RemoveDir Directories="$(ReleaseTempDirectory)" />
