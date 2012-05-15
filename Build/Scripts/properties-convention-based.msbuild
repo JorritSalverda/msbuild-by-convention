@@ -53,9 +53,9 @@
 		<CompileTarget>Rebuild</CompileTarget>		
 		<BuildParameters Condition=" '$(Configuration)' == 'Debug' ">Configuration=$(Configuration);DebugSymbols=true;DebugType=full;RunCodeAnalysis=false;Optimize=false;PreBuildEvent=;PostBuildEvent=</BuildParameters>
 		<BuildParameters Condition=" '$(Configuration)' == 'Release' ">Configuration=$(Configuration);DebugSymbols=true;DebugType=pdbonly;RunCodeAnalysis=false;Optimize=true;PreBuildEvent=;PostBuildEvent=</BuildParameters>
-		<ConfigurationsToRelease Condition=" '$(ConfigurationsToRelease)' == '' ">*</ConfigurationsToRelease>
 		<SuitedForAllEnvironmentsDirectoryName>_Global</SuitedForAllEnvironmentsDirectoryName>
 		<CreateUpdateableAspxFilesInRelease>false</CreateUpdateableAspxFilesInRelease>
+		<ContinueOnTestError Condition=" '$(ContinueOnTestError)' == '' ">False</ContinueOnTestError>
 		
 		<!-- deploy properties -->
 		<ProjectToDeploy></ProjectToDeploy>	
@@ -94,7 +94,18 @@
 		<IntegrationTestsProjectConventionName>IntegrationTests</IntegrationTestsProjectConventionName>
 		<StaticHtmlProjectConventionName>Html</StaticHtmlProjectConventionName>
 	</PropertyGroup>
+	
+	<ItemGroup>
+		<!-- directories to create if missing -->
+		<DirectoriesToCreate Include="$(BinDirectory)" />
+		<DirectoriesToCreate Include="$(ReleaseDirectory)" />
+		<DirectoriesToCreate Include="$(TestResultsDirectory)" />
+		<DirectoriesToCreate Include="$(CodeAnalysisDirectory)" />
 		
+		<!-- limit the amount of environments the release is created for: /p:ConfigurationsToRelease="UAT;PROD" -->
+		<ConfigurationsToRelease Include="$(ConfigurationsToRelease)" />
+	</ItemGroup>		
+			
 	<!-- tasks used for nunit, attrib en other tasks -->
 	<UsingTask AssemblyFile="$(MSBuildCommunityTasksPath)" TaskName="MSBuild.Community.Tasks.Attrib" />
 	<UsingTask AssemblyFile="$(MSBuildCommunityTasksPath)" TaskName="MSBuild.Community.Tasks.FileUpdate" />
@@ -114,13 +125,5 @@
 	
 	<!-- task for config transforms -->
 	<UsingTask TaskName="TransformXml" AssemblyFile="$(WebPublishingPath)" />
-
-	<!-- directories to create if missing -->
-	<ItemGroup>
-		<DirectoriesToCreate Include="$(BinDirectory)" />
-		<DirectoriesToCreate Include="$(ReleaseDirectory)" />
-		<DirectoriesToCreate Include="$(TestResultsDirectory)" />
-		<DirectoriesToCreate Include="$(CodeAnalysisDirectory)" />
-	</ItemGroup>	
 	
 </Project>

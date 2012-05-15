@@ -124,7 +124,7 @@
 			<NunitTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)nunit.framework.dll') " />
 		</ItemGroup>
 			
-		<NUnit Assemblies="@(NunitTestAssemblies)" ToolPath="$(NUnitToolPath)" OutputXmlFile="$(TestResultsDirectory)$(UnitTestsProjectConventionName).Results.xml" DisableShadowCopy="true" Condition=" @(NunitTestAssemblies) != '' " />
+		<NUnit Assemblies="@(NunitTestAssemblies)" ToolPath="$(NUnitToolPath)" OutputXmlFile="$(TestResultsDirectory)$(UnitTestsProjectConventionName).Results.xml" DisableShadowCopy="true" Condition=" @(NunitTestAssemblies) != '' " ContinueOnError="$(ContinueOnTestError)" />
 
 		<!-- filter out test assemblies if Machine.Specifications.dll is not referenced -->
 		<ItemGroup>
@@ -132,7 +132,7 @@
 			<MSpecTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)Machine.Specifications.dll') " />
 		</ItemGroup>
 			
-		<Exec Command="$(MSpecRunnerPath) --teamcity --html $(TestResultsDirectory) @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " />
+		<Exec Command="$(MSpecRunnerPath) --teamcity --html $(TestResultsDirectory) @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " IgnoreExitCode="$(ContinueOnTestError)" />
 	</Target>
 
 	<Target Name="RunIntegrationTests" DependsOnTargets="CreateDirectories;BeforeRunIntegrationTestsPre;BeforeRunIntegrationTests;BeforeRunIntegrationTestsPost;CoreRunIntegrationTests;AfterRunIntegrationTestsPre;AfterRunIntegrationTests;AfterRunIntegrationTestsPost" />
@@ -156,7 +156,7 @@
 			<NunitTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)nunit.framework.dll') " />
 		</ItemGroup>
 			
-		<NUnit Assemblies="@(NunitTestAssemblies)" ToolPath="$(NUnitToolPath)" OutputXmlFile="$(TestResultsDirectory)$(IntegrationTestsProjectConventionName).Results.xml" DisableShadowCopy="true" Condition=" @(NunitTestAssemblies) != '' " />
+		<NUnit Assemblies="@(NunitTestAssemblies)" ToolPath="$(NUnitToolPath)" OutputXmlFile="$(TestResultsDirectory)$(IntegrationTestsProjectConventionName).Results.xml" DisableShadowCopy="true" Condition=" @(NunitTestAssemblies) != '' " ContinueOnError="$(ContinueOnTestError)" />
 
 		<!-- filter out test assemblies if Machine.Specifications.dll is not referenced -->
 		<ItemGroup>
@@ -164,7 +164,7 @@
 			<MSpecTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)Machine.Specifications.dll') " />
 		</ItemGroup>
 			
-		<Exec Command="$(MSpecRunnerPath) --teamcity --html $(TestResultsDirectory) @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " />
+		<Exec Command="$(MSpecRunnerPath) --teamcity --html $(TestResultsDirectory) @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " IgnoreExitCode="$(ContinueOnTestError)" />
 	</Target>
 
 	<Target Name="RunJMeterTests" DependsOnTargets="BeforeRunJMeterTestsPre;BeforeRunJMeterTests;BeforeRunJMeterTestsPost;AfterRunJMeterTestsPre;CoreRunJMeterTests;AfterRunJMeterTests;AfterRunJMeterTestsPost" />
@@ -392,8 +392,7 @@
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)packages.config" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.settings" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.scss" />
-			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)Web.*.config" />
-			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)App.*.config" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.*.config" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.snk" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)obj\**\*" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)_ReSharper*\**\*" />
@@ -427,41 +426,59 @@
 		</ItemGroup>		
 		<Exec Command="&quot;$(OptiPngPath)&quot; &quot;%(AllPngFiles.FullPath)&quot;" Condition=" @(AllPngFiles) != '' " />
 		
-		<!-- determine all environments from web.*.config -->
+		<!-- determine all environments from *.*.config -->
 		<ItemGroup>
-			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
 			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
-			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)Web.$(ConfigurationsToRelease).config" />
-		</ItemGroup>
-		<ItemGroup>
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)*.*.config" />
+
+			<__AllEnvironments Remove="@(__AllEnvironments)" />
+			<__AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+			<__AllEnvironments Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[1])" />
+			<_AllEnvironments Remove="@(AllEnvironments)" />
 			<AllEnvironments Remove="@(AllEnvironments)" />
-			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+
+			<_AllConfigsWithTransforms Remove="@(_AllConfigsWithTransforms)" />
+			<_AllConfigsWithTransforms Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[0])" />
+			<AllConfigsWithTransforms Remove="@(AllConfigsWithTransforms)" />
 		</ItemGroup>
-
-		<!-- remove part of the filename so the environment name is left -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="Web." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
-			<Output ItemName="_AllEnvironmentTransforms" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(_AllEnvironmentTransforms.Identity)" OldValue="web." NewValue="" Condition=" @(_AllEnvironmentTransforms) != '' " >
-			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-
+			
+		<!-- remove duplicates -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(__AllEnvironments)">
+            <Output TaskParameter="OutputItems" ItemName="_AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>		
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(_AllConfigsWithTransforms)">
+            <Output TaskParameter="OutputItems" ItemName="AllConfigsWithTransforms"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>		
+				
+		<!--  remove environments that are not in @(ConfigurationsToRelease) -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetCommonItems" InputItems1="@(_AllEnvironments)" InputItems2="@(ConfigurationsToRelease)" Condition=" @(ConfigurationsToRelease) != '' " >
+            <Output TaskParameter="OutputItems" ItemName="AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
+		<!--  or keep all environments if @(ConfigurationsToRelease) is empty -->
+		<ItemGroup>
+			<AllEnvironments Include="@(_AllEnvironments)" Condition=" @(ConfigurationsToRelease) == '' " />
+		</ItemGroup>
+			
+		<ItemGroup>
+			<ConfigsToTransform Remove="@(ConfigsToTransform)" />
+			<ConfigsToTransform Include="@(AllConfigsWithTransforms)">
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</ConfigsToTransform>
+		</ItemGroup>
+			
 		<!-- copy everything from temp directory to release directory and then remove temp directory; this is to ensure no empty directories end up in the release -->
 		<ItemGroup>
 			<FilesToMove Remove="@(FilesToMove)" />
 			<FilesToMove Include="$(ReleaseTempDirectory)**">
 				<Environment>%(AllEnvironments.Identity)</Environment>
 			</FilesToMove>
-		</ItemGroup>
+		</ItemGroup>	
 
 		<!-- copy files to a separate directory for each environment and update version number in filenames -->
 		<Copy SourceFiles="@(FilesToMove)" DestinationFiles="$(ReleaseDirectory)%(FilesToMove.Environment)\%(FilesToMove.RecursiveDir)$([System.String]::Copy('%(FilesToMove.Filename)').Replace('1.0.0.0',$(BuildVersion)))%(FilesToMove.Extension)" />		
 		
-		<!-- transform web.config -->
-		<TransformXml Source="$(ProjectSourceDirectory)Web.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\Web.config" Transform="$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config') " />
-
-		<!-- transform app.config -->
-		<TransformXml Source="$(ProjectSourceDirectory)App.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\App.config" Transform="$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config') " />	
+		<!-- transform *.config -->
+		<TransformXml Source="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).config" Destination="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\%(ConfigsToTransform.Identity).config" Transform="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config" Condition=" Exists('$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config') " />
 		
 		<!-- remove temporary directory -->
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(ReleaseTempDirectory)" Condition=" Exists('$(ReleaseTempDirectory)') " />
@@ -500,8 +517,7 @@
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)packages.config" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.settings" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\*.scss" />
-			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)Web.*.config" />
-			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)App.*.config" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.*.config" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.snk" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)obj\**\*" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)_ReSharper*\**\*" />
@@ -511,38 +527,59 @@
 		</ItemGroup>
 		<Delete Files="@(FilesToRemoveFromReleaseDirectory)" />
 
-		<!-- determine all environments from web.*.config -->
+		<!-- determine all environments from *.*.config -->
 		<ItemGroup>
-			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
 			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
-			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)Web.$(ConfigurationsToRelease).config" />
-		</ItemGroup>
-		<ItemGroup>
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)*.*.config" />
+
+			<__AllEnvironments Remove="@(__AllEnvironments)" />
+			<__AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+			<__AllEnvironments Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[1])" />
+			<_AllEnvironments Remove="@(AllEnvironments)" />
 			<AllEnvironments Remove="@(AllEnvironments)" />
-			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+
+			<_AllConfigsWithTransforms Remove="@(_AllConfigsWithTransforms)" />
+			<_AllConfigsWithTransforms Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[0])" />
+			<AllConfigsWithTransforms Remove="@(AllConfigsWithTransforms)" />
 		</ItemGroup>
-
-		<!-- remove part of the filename so the environment name is left -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="Web." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
-			<Output ItemName="_AllEnvironmentTransforms" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(_AllEnvironmentTransforms.Identity)" OldValue="web." NewValue="" Condition=" @(_AllEnvironmentTransforms) != '' " >
-			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>		
-
+			
+		<!-- remove duplicates -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(__AllEnvironments)">
+            <Output TaskParameter="OutputItems" ItemName="_AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>		
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(_AllConfigsWithTransforms)">
+            <Output TaskParameter="OutputItems" ItemName="AllConfigsWithTransforms"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>		
+				
+		<!--  remove environments that are not in @(ConfigurationsToRelease) -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetCommonItems" InputItems1="@(_AllEnvironments)" InputItems2="@(ConfigurationsToRelease)" Condition=" @(ConfigurationsToRelease) != '' " >
+            <Output TaskParameter="OutputItems" ItemName="AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
+		<!--  or keep all environments if @(ConfigurationsToRelease) is empty -->
+		<ItemGroup>
+			<AllEnvironments Include="@(_AllEnvironments)" Condition=" @(ConfigurationsToRelease) == '' " />
+		</ItemGroup>
+			
+		<ItemGroup>
+			<ConfigsToTransform Remove="@(ConfigsToTransform)" />
+			<ConfigsToTransform Include="@(AllConfigsWithTransforms)">
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</ConfigsToTransform>
+		</ItemGroup>
+			
 		<!-- copy everything from temp directory to release directory and then remove temp directory; this is to ensure no empty directories end up in the release -->
 		<ItemGroup>
-			<ReleaseFilesToCopy Remove="@(ReleaseFilesToCopy)" />
-			<ReleaseFilesToCopy Include="$(ReleaseTempDirectory)**" />
-		</ItemGroup>
-						
-		<Copy SourceFiles="@(ReleaseFilesToCopy)" DestinationFolder="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
+			<FilesToMove Remove="@(FilesToMove)" />
+			<FilesToMove Include="$(ReleaseTempDirectory)**">
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</FilesToMove>
+		</ItemGroup>	
 
-		<!-- transform web.config -->
-		<TransformXml Source="$(ProjectSourceDirectory)Web.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\Web.config" Transform="$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)Web.%(AllEnvironments.Identity).config') " />
-
-		<!-- transform app.config -->
-		<TransformXml Source="$(ProjectSourceDirectory)App.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\App.config" Transform="$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config') " />	
+		<!-- copy files to a separate directory for each environment and update version number in filenames -->
+		<Copy SourceFiles="@(FilesToMove)" DestinationFiles="$(ReleaseDirectory)%(FilesToMove.Environment)\%(FilesToMove.RecursiveDir)$([System.String]::Copy('%(FilesToMove.Filename)').Replace('1.0.0.0',$(BuildVersion)))%(FilesToMove.Extension)" />		
+		
+		<!-- transform *.config -->
+		<TransformXml Source="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).config" Destination="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\%(ConfigsToTransform.Identity).config" Transform="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config" Condition=" Exists('$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config') " />
 		
 		<!-- remove temporary directory -->
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(ReleaseTempDirectory)" Condition=" Exists('$(ReleaseTempDirectory)') " />
@@ -568,36 +605,60 @@
             <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
         </MSBuild.ExtensionPack.Framework.TextString>
 
-		<!-- determine all environments from app.*.config -->
+		<!-- determine all environments from *.*.config -->
 		<ItemGroup>
-			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
 			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
-			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)App.$(ConfigurationsToRelease).config" />
-		</ItemGroup>
-		<ItemGroup>
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)*.*.config" />
+
+			<__AllEnvironments Remove="@(__AllEnvironments)" />
+			<__AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+			<__AllEnvironments Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[1])" />
+			<_AllEnvironments Remove="@(AllEnvironments)" />
 			<AllEnvironments Remove="@(AllEnvironments)" />
-			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+
+			<_AllConfigsWithTransforms Remove="@(_AllConfigsWithTransforms)" />
+			<_AllConfigsWithTransforms Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[0])" />
+			<AllConfigsWithTransforms Remove="@(AllConfigsWithTransforms)" />
 		</ItemGroup>
-
-		<!-- remove part of the filename so the environment name is left -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="App." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
-			<Output ItemName="_AllEnvironmentTransforms" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(_AllEnvironmentTransforms.Identity)" OldValue="app." NewValue="" Condition=" @(_AllEnvironmentTransforms) != '' " >
-			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-
-		<!-- copy all file from the bin directory to destination directory -->
+			
+		<!-- remove duplicates -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(__AllEnvironments)">
+            <Output TaskParameter="OutputItems" ItemName="_AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>		
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(_AllConfigsWithTransforms)">
+            <Output TaskParameter="OutputItems" ItemName="AllConfigsWithTransforms"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>		
+				
+		<!--  remove environments that are not in @(ConfigurationsToRelease) -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetCommonItems" InputItems1="@(_AllEnvironments)" InputItems2="@(ConfigurationsToRelease)" Condition=" @(ConfigurationsToRelease) != '' " >
+            <Output TaskParameter="OutputItems" ItemName="AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
+		<!--  or keep all environments if @(ConfigurationsToRelease) is empty -->
 		<ItemGroup>
-			<ReleaseFilesToCopy Remove="@(ReleaseFilesToCopy)" />
-			<ReleaseFilesToCopy Include="$(ProjectSourceDirectory)bin\$(Configuration)\*" />
+			<AllEnvironments Include="@(_AllEnvironments)" Condition=" @(ConfigurationsToRelease) == '' " />
 		</ItemGroup>
+			
+		<ItemGroup>
+			<ConfigsToTransform Remove="@(ConfigsToTransform)" />
+			<ConfigsToTransform Include="@(AllConfigsWithTransforms)">
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</ConfigsToTransform>
+		</ItemGroup>
+			
+		<!-- copy everything from temp directory to release directory and then remove temp directory; this is to ensure no empty directories end up in the release -->
+		<ItemGroup>
+			<FilesToMove Remove="@(FilesToMove)" />
+			<FilesToMove Include="$(ProjectSourceDirectory)bin\$(Configuration)\*">
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</FilesToMove>
+		</ItemGroup>	
 
-		<Copy SourceFiles="@(ReleaseFilesToCopy)" DestinationFolder="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
+		<!-- copy files to a separate directory for each environment and update version number in filenames -->
+		<Copy SourceFiles="@(FilesToMove)" DestinationFiles="$(ReleaseDirectory)%(FilesToMove.Environment)\%(FilesToMove.RecursiveDir)$([System.String]::Copy('%(FilesToMove.Filename)').Replace('1.0.0.0',$(BuildVersion)))%(FilesToMove.Extension)" />		
 
-		<!-- transform config -->
-		<TransformXml Source="$(ProjectSourceDirectory)App.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\App.config" Transform="$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config') " />
-
+		<!-- transform *.config -->
+		<TransformXml Source="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).config" Destination="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\%(ConfigsToTransform.Identity).config" Transform="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config" Condition=" Exists('$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config') " />
+				
 	</Target>
 
 	<Target Name="ReleaseServices" DependsOnTargets="BeforeReleaseServicesPre;BeforeReleaseServices;BeforeReleaseServicesPost;CoreReleaseServices;AfterReleaseServicesPre;AfterReleaseServices;AfterReleaseServicesPost" />
@@ -618,35 +679,59 @@
             <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
         </MSBuild.ExtensionPack.Framework.TextString>
 
-		<!-- determine all environments from app.*.config -->
+		<!-- determine all environments from *.*.config -->
 		<ItemGroup>
-			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
 			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
-			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)App.$(ConfigurationsToRelease).config" />
-		</ItemGroup>
-		<ItemGroup>
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)*.*.config" />
+
+			<__AllEnvironments Remove="@(__AllEnvironments)" />
+			<__AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+			<__AllEnvironments Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[1])" />
+			<_AllEnvironments Remove="@(AllEnvironments)" />
 			<AllEnvironments Remove="@(AllEnvironments)" />
-			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+
+			<_AllConfigsWithTransforms Remove="@(_AllConfigsWithTransforms)" />
+			<_AllConfigsWithTransforms Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[0])" />
+			<AllConfigsWithTransforms Remove="@(AllConfigsWithTransforms)" />
 		</ItemGroup>
-
-		<!-- remove part of the filename so the environment name is left -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="App." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
-			<Output ItemName="_AllEnvironmentTransforms" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(_AllEnvironmentTransforms.Identity)" OldValue="app." NewValue="" Condition=" @(_AllEnvironmentTransforms) != '' " >
-			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>		
-
-		<!-- copy all file from the bin directory to destination directory -->
+			
+		<!-- remove duplicates -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(__AllEnvironments)">
+            <Output TaskParameter="OutputItems" ItemName="_AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>		
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(_AllConfigsWithTransforms)">
+            <Output TaskParameter="OutputItems" ItemName="AllConfigsWithTransforms"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>		
+				
+		<!--  remove environments that are not in @(ConfigurationsToRelease) -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetCommonItems" InputItems1="@(_AllEnvironments)" InputItems2="@(ConfigurationsToRelease)" Condition=" @(ConfigurationsToRelease) != '' " >
+            <Output TaskParameter="OutputItems" ItemName="AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
+		<!--  or keep all environments if @(ConfigurationsToRelease) is empty -->
 		<ItemGroup>
-			<ReleaseFilesToCopy Remove="@(ReleaseFilesToCopy)" />
-			<ReleaseFilesToCopy Include="$(ProjectSourceDirectory)bin\$(Configuration)\*" />
+			<AllEnvironments Include="@(_AllEnvironments)" Condition=" @(ConfigurationsToRelease) == '' " />
 		</ItemGroup>
+			
+		<ItemGroup>
+			<ConfigsToTransform Remove="@(ConfigsToTransform)" />
+			<ConfigsToTransform Include="@(AllConfigsWithTransforms)">
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</ConfigsToTransform>
+		</ItemGroup>
+			
+		<!-- copy everything from temp directory to release directory and then remove temp directory; this is to ensure no empty directories end up in the release -->
+		<ItemGroup>
+			<FilesToMove Remove="@(FilesToMove)" />
+			<FilesToMove Include="$(ProjectSourceDirectory)bin\$(Configuration)\*">
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</FilesToMove>
+		</ItemGroup>	
 
-		<Copy SourceFiles="@(ReleaseFilesToCopy)" DestinationFolder="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
+		<!-- copy files to a separate directory for each environment and update version number in filenames -->
+		<Copy SourceFiles="@(FilesToMove)" DestinationFiles="$(ReleaseDirectory)%(FilesToMove.Environment)\%(FilesToMove.RecursiveDir)$([System.String]::Copy('%(FilesToMove.Filename)').Replace('1.0.0.0',$(BuildVersion)))%(FilesToMove.Extension)" />		
 
-		<!-- transform config -->
-		<TransformXml Source="$(ProjectSourceDirectory)App.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\App.config" Transform="$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config') " />
+		<!-- transform *.config -->
+		<TransformXml Source="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).config" Destination="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\%(ConfigsToTransform.Identity).config" Transform="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config" Condition=" Exists('$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config') " />
 
 	</Target>
 
@@ -696,30 +781,51 @@
             <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
         </MSBuild.ExtensionPack.Framework.TextString>
 
-		<!-- determine all environments from app.*.config -->
+		<!-- determine all environments from *.*.config -->
 		<ItemGroup>
-			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
 			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
-			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)App.$(ConfigurationsToRelease).config" />
-		</ItemGroup>
-		<ItemGroup>
-			<AllEnvironments Remove="@(AllEnvironments)" />
-			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
-		</ItemGroup>
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)*.*.config" />
 
-		<!-- remove part of the filename so the environment name is left -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="App." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
-			<Output ItemName="_AllEnvironmentTransforms" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(_AllEnvironmentTransforms.Identity)" OldValue="app." NewValue="" Condition=" @(_AllEnvironmentTransforms) != '' " >
-			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
+			<__AllEnvironments Remove="@(__AllEnvironments)" />
+			<__AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+			<__AllEnvironments Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[1])" />
+			<_AllEnvironments Remove="@(AllEnvironments)" />
+			<AllEnvironments Remove="@(AllEnvironments)" />
+
+			<_AllConfigsWithTransforms Remove="@(_AllConfigsWithTransforms)" />
+			<_AllConfigsWithTransforms Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[0])" />
+			<AllConfigsWithTransforms Remove="@(AllConfigsWithTransforms)" />
+		</ItemGroup>
+			
+		<!-- remove duplicates -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(__AllEnvironments)">
+            <Output TaskParameter="OutputItems" ItemName="_AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>		
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(_AllConfigsWithTransforms)">
+            <Output TaskParameter="OutputItems" ItemName="AllConfigsWithTransforms"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>		
+				
+		<!--  remove environments that are not in @(ConfigurationsToRelease) -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetCommonItems" InputItems1="@(_AllEnvironments)" InputItems2="@(ConfigurationsToRelease)" Condition=" @(ConfigurationsToRelease) != '' " >
+            <Output TaskParameter="OutputItems" ItemName="AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
+		<!--  or keep all environments if @(ConfigurationsToRelease) is empty -->
+		<ItemGroup>
+			<AllEnvironments Include="@(_AllEnvironments)" Condition=" @(ConfigurationsToRelease) == '' " />
+		</ItemGroup>
+			
+		<ItemGroup>
+			<ConfigsToTransform Remove="@(ConfigsToTransform)" />
+			<ConfigsToTransform Include="@(AllConfigsWithTransforms)">
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</ConfigsToTransform>
+		</ItemGroup>
 
 		<MakeDir Directories="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
 
-		<!-- transform config -->
-		<TransformXml Source="$(ProjectSourceDirectory)App.config" Destination="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)$(ConfigTargetName)" Transform="$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config" Condition=" Exists('$(ProjectSourceDirectory)App.%(AllEnvironments.Identity).config') " />
-
+		<!-- transform *.config -->
+		<TransformXml Source="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).config" Destination="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\%(ConfigsToTransform.Identity).config" Transform="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config" Condition=" Exists('$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config') " />
+		
 	</Target>
 
 	<Target Name="ReleaseAzure" DependsOnTargets="BeforeReleaseAzurePre;BeforeReleaseAzure;BeforeReleaseAzurePost;CoreReleaseAzure;AfterReleaseAzurePre;AfterReleaseAzure;AfterReleaseAzurePost" />
@@ -733,23 +839,33 @@
 		<PropertyGroup>
 			<ProjectSourceDirectory>%(_AzureToRelease.RootDir)%(_AzureToRelease.Directory)</ProjectSourceDirectory>
 		</PropertyGroup>
-
-		<!-- determine all environments from ServiceConfiguration.*.cscfg -->
+		
+		<!-- determine all environments from *.*.cscfg -->
 		<ItemGroup>
-			<_AllEnvironmentTransforms Remove="@(_AllEnvironmentTransforms)" />
 			<AllEnvironmentTransforms Remove="@(AllEnvironmentTransforms)" />
-			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)ServiceConfiguration.$(ConfigurationsToRelease).cscfg" />
-		</ItemGroup>
-		<ItemGroup>
-			<AllEnvironments Remove="@(AllEnvironments)" />
-			<AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
-		</ItemGroup>
+			<AllEnvironmentTransforms Include="$(ProjectSourceDirectory)ServiceConfiguration.*.cscfg" />
 
-		<!-- remove part of the filename so the environment name is left -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AllEnvironmentTransforms.Filename)" OldValue="ServiceConfiguration." NewValue="" Condition=" @(AllEnvironmentTransforms) != '' " >
-			<Output ItemName="AllEnvironments" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>		
-	
+			<__AllEnvironments Remove="@(__AllEnvironments)" />
+			<__AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
+			<__AllEnvironments Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[1])" />
+			<_AllEnvironments Remove="@(AllEnvironments)" />
+			<AllEnvironments Remove="@(AllEnvironments)" />
+		</ItemGroup>
+		
+		<!-- remove duplicates -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(__AllEnvironments)">
+            <Output TaskParameter="OutputItems" ItemName="_AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>		
+				
+		<!--  remove environments that are not in @(ConfigurationsToRelease) -->
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetCommonItems" InputItems1="@(_AllEnvironments)" InputItems2="@(ConfigurationsToRelease)" Condition=" @(ConfigurationsToRelease) != '' " >
+            <Output TaskParameter="OutputItems" ItemName="AllEnvironments"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
+		<!--  or keep all environments if @(ConfigurationsToRelease) is empty -->
+		<ItemGroup>
+			<AllEnvironments Include="@(_AllEnvironments)" Condition=" @(ConfigurationsToRelease) == '' " />
+		</ItemGroup>
+			
 		<!-- not sure if this works properly if different azure projects have different environment transforms -->
 		<ItemGroup>
 			<AzureToRelease Include="@(_AzureToRelease)">
