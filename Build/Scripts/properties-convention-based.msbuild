@@ -5,7 +5,7 @@
 	
 	<PropertyGroup>
 		<!-- common directories -->
-		<BaseDirectory Condition=" '$(BaseDirectory)' == '' ">..\..\</BaseDirectory>
+		<BaseDirectory>..\..\</BaseDirectory>
 		<DependencyDirectory>$(BaseDirectory)Dependencies\</DependencyDirectory>
 		<DependencyNuGetDirectory>$(DependencyDirectory)NuGet\</DependencyNuGetDirectory>
 		<SourceDirectory>$(BaseDirectory)Source\</SourceDirectory>
