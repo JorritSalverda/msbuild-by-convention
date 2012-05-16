@@ -7,25 +7,17 @@
 	
 	<!-- beginregion Build targets -->
 	
-	<Target Name="CreateDirectories" DependsOnTargets="BeforeCreateDirectories;CoreCreateDirectories;AfterCreateDirectories" />
-	<Target Name="BeforeCreateDirectories" />
-	<Target Name="AfterCreateDirectories" />
-	<Target Name="CoreCreateDirectories">
+	<Target Name="CreateDirectories">
 		<MakeDir Directories="@(DirectoriesToCreate)" />
 	</Target>
 
-	<Target Name="Clean" DependsOnTargets="BeforeClean;CoreClean;CreateDirectories;AfterClean" />
-	<Target Name="BeforeClean" />
-	<Target Name="AfterClean" />
+	<Target Name="Clean" DependsOnTargets="CoreClean;CreateDirectories" />
 	<Target Name="CoreClean">
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(DirectoriesToCreate.FullPath)" Condition=" Exists('%(DirectoriesToCreate.FullPath)') " />
 		<RemoveDir Directories="@(DirectoriesToCreate)" />
 	</Target>
 
-	<Target Name="CopyDependencies" DependsOnTargets="BeforeCopyDependencies;CoreCopyDependencies;AfterCopyDependencies" />
-	<Target Name="BeforeCopyDependencies" />
-	<Target Name="AfterCopyDependencies" />
-	<Target Name="CoreCopyDependencies">
+	<Target Name="CopyDependencies">
 		<ItemGroup>
 			<DependenciesToCopy Include="$(DependencyDirectory)**\*.dll" />
 			<DependenciesToCopy Include="$(DependencyDirectory)**\*.xml" />
@@ -33,10 +25,7 @@
 		<Copy SourceFiles="@(DependenciesToCopy)" DestinationFolder="$(BinDirectory)" Condition=" @(DependenciesToCopy) != '' " />
 	</Target>
 
-	<Target Name="SetAssemblyFileVersion" DependsOnTargets="BeforeSetAssemblyFileVersion;CoreSetAssemblyFileVersion;AfterSetAssemblyFileVersion" />
-	<Target Name="BeforeSetAssemblyFileVersion" />
-	<Target Name="AfterSetAssemblyFileVersion" />
-	<Target Name="CoreSetAssemblyFileVersion">
+	<Target Name="SetAssemblyFileVersion">
 		<!-- set correct file version -->
 		<ItemGroup>
 			<AssemblyInfoFiles Include="$(CSharpSourceDirectory)**\AssemblyInfo.cs" />
@@ -45,10 +34,7 @@
 	    <FileUpdate Files="@(AssemblyInfoFiles)" Regex="\[\s*assembly\s*:\s*AssemblyFileVersion\s*\(\s*&quot;[\d\.\*]+&quot;\s*\)\s*\]" ReplacementText="[assembly: AssemblyFileVersion(&quot;$(BuildVersion)&quot;)]" Condition=" @(AssemblyInfoFiles) != '' " />
 	</Target>
 
-	<Target Name="ReplaceProjectImportStatements" DependsOnTargets="BeforeReplaceProjectImportStatements;CoreReplaceProjectImportStatements;AfterReplaceProjectImportStatements" />
-	<Target Name="BeforeReplaceProjectImportStatements" />
-	<Target Name="AfterReplaceProjectImportStatements" />
-	<Target Name="CoreReplaceProjectImportStatements" Condition=" Exists('$(VisualStudioTeamdataDir)Microsoft.Data.Schema.SqlTasks.targets') ">
+	<Target Name="ReplaceProjectImportStatements" Condition=" Exists('$(VisualStudioTeamdataDir)Microsoft.Data.Schema.SqlTasks.targets') ">
 		<!-- look for dbproj files and replace the import statement with one pointing to /build/tools/VisualStudio.v10.0.TeamData -->
 		<ItemGroup>
 			<DbProjectFiles Remove="@(DbProjectFiles)" />
@@ -71,25 +57,6 @@
 		<ItemGroup>
 			<SolutionsToBuild Include="$(CSharpSourceDirectory)**\*.sln" />
 		</ItemGroup>
-	</Target>
-	<Target Name="AfterCompile">
-	
-		<!-- restore db project file -->
-		<ItemGroup>
-			<_OriginalDbProjectFiles Remove="@(_OriginalDbProjectFiles)" />
-			<_OriginalDbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj.original" />
-			
-			<OriginalDbProjectFiles Remove="@(OriginalDbProjectFiles)" />
-			<OriginalDbProjectFiles Include="%(_OriginalDbProjectFiles.FullPath)">
-				<DestinationFile>$([System.String]::Copy('%(_OriginalDbProjectFiles.FullPath)').Replace(".original",""))</DestinationFile>
-			</OriginalDbProjectFiles>
-		</ItemGroup>
-		
-		<Message Text="OriginalDbProjectFiles: @(OriginalDbProjectFiles)" />
-
-		<Copy SourceFiles="@(OriginalDbProjectFiles)" DestinationFiles="%(OriginalDbProjectFiles.DestinationFile)" />
-		<Delete Files="@(OriginalDbProjectFiles)" />
-	
 	</Target>
     <Target Name="CoreCompile" Inputs="%(SolutionsToBuild.RootDir)%(SolutionsToBuild.Directory)" Outputs="NonExistingOutputToTriggerTargetForEverySolution">
 		<Error Text="There are no solutions to compile!" Condition=" @(SolutionsToBuild) == '' " />
@@ -122,14 +89,31 @@
 		<!-- copy output assemblies to build/bin directory -->
         <Copy SourceFiles="@(BuildOutput)" DestinationFolder="$(BinDirectory)" Condition = "%(Extension) == '.dll' Or %(Extension) == '.xml'" />
     </Target>
+	<Target Name="AfterCompile">
+	
+		<!-- restore db project file -->
+		<ItemGroup>
+			<_OriginalDbProjectFiles Remove="@(_OriginalDbProjectFiles)" />
+			<_OriginalDbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj.original" />
+			
+			<OriginalDbProjectFiles Remove="@(OriginalDbProjectFiles)" />
+			<OriginalDbProjectFiles Include="%(_OriginalDbProjectFiles.FullPath)">
+				<DestinationFile>$([System.String]::Copy('%(_OriginalDbProjectFiles.FullPath)').Replace(".original",""))</DestinationFile>
+			</OriginalDbProjectFiles>
+		</ItemGroup>
+		
+		<Message Text="OriginalDbProjectFiles: @(OriginalDbProjectFiles)" />
+
+		<Copy SourceFiles="@(OriginalDbProjectFiles)" DestinationFiles="%(OriginalDbProjectFiles.DestinationFile)" />
+		<Delete Files="@(OriginalDbProjectFiles)" />
+	
+	</Target>	
 
 	<!-- endregion Build targets -->
 
 	<!-- beginregion RunUnitTests targets -->
 	
-	<Target Name="RunUnitTests" DependsOnTargets="CreateDirectories;BeforeRunUnitTests;CoreRunUnitTests;AfterRunUnitTests" />
-	<Target Name="BeforeRunUnitTests" />
-	<Target Name="AfterRunUnitTests" />
+	<Target Name="RunUnitTests" DependsOnTargets="CreateDirectories;CoreRunUnitTests" />
 	<Target Name="CoreRunUnitTests">
 		<ItemGroup>
 			<UnitTestProjects Remove="@(UnitTestProjects)" />
@@ -162,9 +146,7 @@
 	
 	<!-- beginregion RunIntegrationTests targets -->
 	
-	<Target Name="RunIntegrationTests" DependsOnTargets="CreateDirectories;BeforeRunIntegrationTests;CoreRunIntegrationTests;AfterRunIntegrationTests" />
-	<Target Name="BeforeRunIntegrationTests" />
-	<Target Name="AfterRunIntegrationTests" />
+	<Target Name="RunIntegrationTests" DependsOnTargets="CreateDirectories;CoreRunIntegrationTests" />
 	<Target Name="CoreRunIntegrationTests">
 		<ItemGroup>
 			<IntegrationTestProjects Remove="@(IntegrationTestProjects)" />
@@ -197,14 +179,13 @@
 	
 	<!-- beginregion RunJMeterTests targets -->
 	
-	<Target Name="RunJMeterTests" DependsOnTargets="BeforeRunJMeterTests;AfterRunJMeterTestsPre;AfterRunJMeterTests" />
+	<Target Name="RunJMeterTests" DependsOnTargets="BeforeRunJMeterTests;CoreRunJMeterTests" />
 	<Target Name="BeforeRunJMeterTests">
 		<ItemGroup>
 			<JMeterTestProjects Remove="@(JMeterTestProjects)" />
 			<JMeterTestProjects Include="$(JMeterTestsDirectory)**\*.jmx" />
 		</ItemGroup>
 	</Target>
-	<Target Name="AfterRunJMeterTests" />
 	<Target Name="CoreRunJMeterTests" Inputs="%(JMeterTestProjects.FullPath)" Outputs="AlwaysExecute">
 		<ConvertToAbsolutePath Paths="$(TestResultsDirectory)%(JMeterTestProjects.Filename).log">
 			<Output TaskParameter="AbsolutePaths" PropertyName="JMeterTestLogFileLocation" />
@@ -224,7 +205,7 @@
 	
 	<!-- beginregion Release targets -->	
 
-	<Target Name="MinifyJavaScript" DependsOnTargets="BeforeMinifyJavaScript;CoreMinifyJavaScript;AfterMinifyJavaScript" />
+	<Target Name="MinifyJavaScript" DependsOnTargets="BeforeMinifyJavaScript;CoreMinifyJavaScript" />
 	<Target Name="BeforeMinifyJavaScript">
 		<!-- remove previously minified javascript -->
 		<ItemGroup>
@@ -238,7 +219,6 @@
 			<JavaScriptFiles Remove="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\*.js" />
 		</ItemGroup>
 	</Target>
-	<Target Name="AfterMinifyJavaScript" />
 	<Target Name="CoreMinifyJavaScript" Inputs="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)" Outputs="AlwaysExecute">
 		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="%(JavaScriptFiles.Directory)" String2="\">
 			<Output ItemName="JavaScriptOutputDirectoryParts" TaskParameter="Strings" />
@@ -262,7 +242,7 @@
 			/>
 	</Target>
 
-	<Target Name="MinifyCss" DependsOnTargets="BeforeMinifyCss;CoreMinifyCss;AfterMinifyCss" />
+	<Target Name="MinifyCss" DependsOnTargets="BeforeMinifyCss;CoreMinifyCss" />
 	<Target Name="BeforeMinifyCss">
 		<!-- remove previously minified css -->
 		<ItemGroup>
@@ -276,7 +256,6 @@
 			<CssFiles Remove="$(SourceDirectory)**\$(CssDirectoryConventionName)\*.css" />
 		</ItemGroup>
 	</Target>
-	<Target Name="AfterMinifyCss" />
 	<Target Name="CoreMinifyCss" Inputs="%(CssFiles.RootDir)%(CssFiles.Directory)" Outputs="AlwaysExecute">
 		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="%(CssFiles.Directory)" String2="\">
 			<Output ItemName="CssOutputDirectoryParts" TaskParameter="Strings" />
@@ -300,14 +279,13 @@
 			/>
 	</Target>
 
-	<Target Name="PublishFlash" DependsOnTargets="BeforePublishFlash;CorePublishFlash;AfterPublishFlash" />
+	<Target Name="PublishFlash" DependsOnTargets="BeforePublishFlash;CorePublishFlash" />
 	<Target Name="BeforePublishFlash">
 		<ItemGroup>
 			<FlashProjects Include="$(FlashSourceDirectory)**\*.$(FlashProjectDirectoryConventionName)\*" />
 			<FlashProjectDirs Include="@(FlashProjects->'%(RelativeDir)')" />
 		</ItemGroup>
 	</Target>
-	<Target Name="AfterPublishFlash" />
 	<Target Name="CorePublishFlash" Inputs="%(FlashProjectDirs.RootDir)%(FlashProjectDirs.Directory)" Outputs="AlwaysExecute">
 		<!-- get rid of the trailing slash -->
 		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(FlashProjectDirs.RelativeDir)\" OldValue="\\" NewValue="">
@@ -591,7 +569,7 @@
 		<RemoveDir Directories="$(ReleaseTempDirectory)" />
 	</Target>
 
-	<Target Name="ReleaseAzure" DependsOnTargets="_BeforeReleaseAzure;BeforeReleaseAzure;CoreReleaseAzure;AfterReleaseAzure" />
+	<Target Name="ReleaseAzure" DependsOnTargets="_BeforeReleaseAzure;BeforeReleaseAzure;CoreReleaseAzure" />
 	<Target Name="_BeforeReleaseAzure">
 		<ItemGroup>
 			<_AzureToRelease Include="$(CSharpSourceDirectory)**\*.$(AzureProjectConventionName).ccproj" />
@@ -641,7 +619,6 @@
 		<Message Text="AzureToRelease : @(AzureToRelease)" />
 
 	</Target>
-	<Target Name="AfterReleaseAzure" />
 	<Target Name="CoreReleaseAzure" Inputs="%(AzureToRelease.RootDir)%(AzureToRelease.Directory)%(AzureToRelease.Environment)" Outputs="AlwaysExecute">
 
 		<PropertyGroup>
@@ -722,14 +699,13 @@
 	
 	<!-- beginregion Deploy targets -->
 	
-	<Target Name="DeployWebsite" DependsOnTargets="BeforeDeployWebsite;CoreDeployWebsite;AfterDeployWebsite" />
+	<Target Name="DeployWebsite" DependsOnTargets="BeforeDeployWebsite;CoreDeployWebsite" />
 	<Target Name="BeforeDeployWebsite">
 		<ItemGroup>
 			<_WebsitesToDeploy Include="$(CSharpSourceDirectory)**\*.$(WebsiteProjectConventionName).csproj" />
 			<WebsitesToDeploy Include="@(_WebsitesToDeploy)" Condition = " %(_WebsitesToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>	
-	<Target Name="AfterDeployWebsite" />
 	<Target Name="CoreDeployWebsite" Inputs="%(WebsitesToDeploy.RootDir)%(WebsitesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
 		<!-- call targets 'Deploy' with parameters '/p:DeployEnvironment=<environment to deploy to>;ProjectToDeploy=<project filename without extension>;DeployServer=<server - with msdeploy installed - to deploy to>;DeployTargetName=<iis sitename to update>;DeployUsername=<msdeploy user>;DeployPassword=<msdeploy password>' -->
 
@@ -748,47 +724,52 @@
 		<Exec Command="&quot;$(MsDeployPath)&quot; -verb:sync -source:contentpath=&quot;$(ProjectReleaseDirectory)&quot; -dest:contentpath=&quot;$(DeployTargetName)&quot;,wmsvc=$(DeployServer),username=$(DeployUsername),password=$(DeployPassword) -allowUntrusted" />
 	</Target>
 
-	<Target Name="DeployWebService" DependsOnTargets="BeforeDeployWebService;CoreDeployWebService;AfterDeployWebService" />
+	<Target Name="DeployWebService" DependsOnTargets="BeforeDeployWebService;CoreDeployWebService" />
 	<Target Name="BeforeDeployWebService">
 		<ItemGroup>
 			<_WebServicesToDeploy Include="$(CSharpSourceDirectory)**\*.$(WebServiceProjectConventionName).csproj" />
 			<WebServicesToDeploy Include="@(_WebServicesToDeploy)" Condition = " %(_WebServicesToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>
-	<Target Name="AfterDeployWebService" />
 	<Target Name="CoreDeployWebService" Inputs="%(WebServicesToDeploy.RootDir)%(WebServicesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+	
+		<!-- todo deploy with msbuild or robocopy -->
+	
 	</Target>
 
-	<Target Name="DeployConsoleApp" DependsOnTargets="BeforeDeployConsoleApp;CoreDeployConsoleApp;AfterDeployConsoleApp" />
+	<Target Name="DeployConsoleApp" DependsOnTargets="BeforeDeployConsoleApp;CoreDeployConsoleApp" />
 	<Target Name="BeforeDeployConsoleApp">
 		<ItemGroup>
 			<_ConsoleAppsToDeploy Include="$(CSharpSourceDirectory)**\*.$(ConsoleAppProjectConventionName).csproj" />
 			<ConsoleAppsToDeploy Include="@(_ConsoleAppsToDeploy)" Condition = " %(_ConsoleAppsToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>
-	<Target Name="AfterDeployConsoleApp" />
 	<Target Name="CoreDeployConsoleApp" Inputs="%(ConsoleAppsToDeploy.RootDir)%(ConsoleAppsToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+	
+		<!-- todo deploy with msbuild or robocopy -->
+	
 	</Target>
 
-	<Target Name="DeployService" DependsOnTargets="BeforeDeployService;CoreDeployService;AfterDeployService" />
+	<Target Name="DeployService" DependsOnTargets="BeforeDeployService;CoreDeployService" />
 	<Target Name="BeforeDeployService">
 		<ItemGroup>
 			<_ServicesToDeploy Include="$(CSharpSourceDirectory)**\*.$(WindowsServiceProjectConventionName).csproj" />
 			<ServicesToDeploy Include="@(_ServicesToDeploy)" Condition = " %(_ServicesToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>
-	<Target Name="AfterDeployService" />
 	<Target Name="CoreDeployService" Inputs="%(ServicesToDeploy.RootDir)%(ServicesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+	
+		<!-- todo deploy with msbuild or robocopy -->
+	
 	</Target>
 
-	<Target Name="DeployDatabase" DependsOnTargets="BeforeDeployDatabase;CoreDeployDatabase;AfterDeployDatabase" />
+	<Target Name="DeployDatabase" DependsOnTargets="BeforeDeployDatabase;CoreDeployDatabase" />
 	<Target Name="BeforeDeployDatabase">
 		<ItemGroup>
 			<_DatabasesToDeploy Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj" />
 			<DatabasesToDeploy Include="@(_DatabasesToDeploy)" Condition = " %(_DatabasesToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>
-	<Target Name="AfterDeployDatabase" />
 	<Target Name="CoreDeployDatabase" Inputs="%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
 		<!-- call targets 'Deploy' with parameters '/p:ProjectToDeploy=<database project filename without extension>;DeployServer=<database-server to deploy to>;DeployTargetName=<database name on the server to update>;DeployUsername=<msdeploy user>;DeployPassword=<msdeploy password>' -->
 
@@ -810,14 +791,13 @@
 
 	</Target>
 
-	<Target Name="DeployAzure" DependsOnTargets="BeforeDeployAzure;CoreDeployAzure;AfterDeployAzure" />
+	<Target Name="DeployAzure" DependsOnTargets="BeforeDeployAzure;CoreDeployAzure" />
 	<Target Name="BeforeDeployAzure">
 		<ItemGroup>
 			<_AzureToDeploy Include="$(CSharpSourceDirectory)**\*.$(AzureProjectConventionName).ccproj" />
 			<AzureToDeploy Include="@(_AzureToDeploy)" Condition = " %(_AzureToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>
-	<Target Name="AfterDeployAzure" />
 	<Target Name="CoreDeployAzure" Inputs="%(AzureToDeploy.RootDir)%(AzureToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
 		<!-- call targets 'Deploy' with parameters '/p:DeployEnvironment=<environment to deploy to>;ProjectToDeploy=<azure project filename without extension>;AzureSubscriptionID=<AzureSubscriptionID>;AzureCertificateFilename=<AzureCertificateFilename>;AzureCertificatePassword=<AzureCertificatePassword>;AzureHostedServiceName=<AzureHostedServiceName>;AzureStorageAccountName=<AzureStorageAccountName>;AzureStorageAccountKey=<AzureStorageAccountKey>;AzureSwapToProductionAfterDeploy=(True|False);AzureRemoveStagingAfterSwap=(True|False);AzureDisallowMultipleActiveInstances=(True|False)' -->
 
@@ -865,14 +845,13 @@
 	
 	<!-- beginregion Delete targets -->	
 	
-	<Target Name="DeleteAzure" DependsOnTargets="BeforeDeleteAzurePre;BeforeDeleteAzure;BeforeDeleteAzurePost;CoreDeleteAzure;AfterDeleteAzurePre;AfterDeleteAzure;AfterDeleteAzurePost" />
+	<Target Name="DeleteAzure" DependsOnTargets="BeforeDeleteAzure;CoreDeleteAzure" />
 	<Target Name="BeforeDeleteAzure">
 		<ItemGroup>
 			<_AzureToDelete Include="$(SourceDirectory)**\*.$(AzureProjectConventionName).ccproj" />
 			<AzureToDelete Include="@(_AzureToDelete)" Condition = " %(_AzureToDelete.Filename) == $(ProjectToDelete) " />
 		</ItemGroup>
 	</Target>
-	<Target Name="AfterDeleteAzure" />
 	<Target Name="CoreDeleteAzure" Inputs="%(AzureToDelete.RootDir)%(AzureToDelete.Directory)" Outputs="AlwaysExecute">
 		<!-- call targets 'Delete' with parameters 'ProjectToDelete=<azure project filename without extension>;AzureSubscriptionID=<AzureSubscriptionID>;AzureCertificateFilename=<AzureCertificateFilename>;AzureCertificatePassword=<AzureCertificatePassword>;AzureHostedServiceName=<AzureHostedServiceName>;AzureHostedServiceSlot=<Staging|Production>' -->
 
