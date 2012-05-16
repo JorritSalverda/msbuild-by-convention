@@ -674,7 +674,7 @@
 		<Copy SourceFiles="@(ReleaseFilesToCopy)" DestinationFolder="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)" />
 
 		<!-- transform ServiceConfiguration.cscfg for environment -->
-		<TransformXml Source="$(ProjectSourceDirectory)ServiceConfiguration.cscfg" Destination="$(ReleaseDirectory)%(AzureToRelease.Environment)\$(RelativeProjectReleaseDirectory)ServiceConfiguration.cscfg" Transform="$(ProjectSourceDirectory)ServiceConfiguration.%(AzureToRelease.Environment).cscfg" Condition=" Exists('$(ProjectSourceDirectory)ServiceConfiguration.%(AzureToRelease.Environment).cscfg') " />
+		<TransformXml Source="$(ProjectSourceDirectory)ServiceConfiguration.cscfg" Destination="$(ReleaseDirectory)%(AzureToRelease.Environment)\$(RelativeProjectReleaseDirectory)ServiceConfiguration.cscfg" Transform="$(ProjectSourceDirectory)ServiceConfiguration.%(AzureToRelease.Environment).cscfg" Condition=" Exists('$(ProjectSourceDirectory)ServiceConfiguration.%(AzureToRelease.Environment).cscfg') And Exists('$(ProjectSourceDirectory)ServiceConfiguration.cscfg') " />
 
 		<!-- restore ServiceDefinition.csdef -->
 		<Copy SourceFiles="$(ProjectSourceDirectory)ServiceDefinition.csdef.original" DestinationFiles="$(ProjectSourceDirectory)ServiceDefinition.csdef" Retries="30" RetryDelayMilliseconds="5000" />
