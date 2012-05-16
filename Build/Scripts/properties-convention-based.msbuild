@@ -24,7 +24,7 @@
 		
 		<!-- tool paths -->
 		<NUnitToolPath>$(BuildToolsDirectory)NUnit-2.6.0.12051\</NUnitToolPath>
-		<MSpecRunnerPath>$(BuildToolsDirectory)Machine.Specifications.0.5.3.0\mspec-clr4.exe</MSpecRunnerPath>
+		<MSpecRunnerPath>$(BuildToolsDirectory)Machine.Specifications.0.5.6.0\tools\mspec-clr4.exe</MSpecRunnerPath>
 		<MSBuildCommunityTasksPath>$(BuildToolsDirectory)MSBuild.Community.Tasks.v1.2.0.306\MSBuild.Community.Tasks.dll</MSBuildCommunityTasksPath>
 		<YUICompressorPath>$(BuildToolsDirectory)Yahoo.Yui.Compressor.v1.6.0.2\</YUICompressorPath>
 		<ExtensionTasksPath>$(BuildToolsDirectory)MSBuild.ExtensionPack.Binaries.v4.0.2.0\MSBuild.ExtensionPack.dll</ExtensionTasksPath>
