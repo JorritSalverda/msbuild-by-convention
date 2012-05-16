@@ -51,14 +51,18 @@
 	<Target Name="CoreReplaceProjectImportStatements" Condition=" Exists('$(VisualStudioTeamdataDir)Microsoft.Data.Schema.SqlTasks.targets') ">
 		<!-- look for dbproj files and replace the import statement with one pointing to /build/tools/VisualStudio.v10.0.TeamData -->
 		<ItemGroup>
-			<ProjectFiles Remove="@(ProjectFiles)" />
-			<ProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj" />
+			<DbProjectFiles Remove="@(DbProjectFiles)" />
+			<DbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj" />
 		</ItemGroup>
 		<ConvertToAbsolutePath Paths="$(VisualStudioTeamdataDir)">
 			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteVisualStudioTeamdataDir" />
 		</ConvertToAbsolutePath>
-		<Attrib ReadOnly="false" Files="@(ProjectFiles)" />
-	    <FileUpdate Files="@(ProjectFiles)" Regex="\$\(MSBuildExtensionsPath\)\\Microsoft\\VisualStudio\\v10\.0\\TeamData\\" ReplacementText="$(AbsoluteVisualStudioTeamdataDir)" Condition=" @(ProjectFiles) != '' " />
+		
+		<!-- keep backup of the project file -->
+		<Copy SourceFiles="@(DbProjectFiles)" DestinationFiles="%(DbProjectFiles.FullPath).original" /> 
+		
+		<Attrib ReadOnly="false" Files="@(DbProjectFiles)" />
+	    <FileUpdate Files="@(DbProjectFiles)" Regex="\$\(MSBuildExtensionsPath\)\\Microsoft\\VisualStudio\\v10\.0\\TeamData\\" ReplacementText="$(AbsoluteVisualStudioTeamdataDir)" Condition=" @(DbProjectFiles) != '' " />
 	</Target>
 
 	<Target Name="Compile" DependsOnTargets="Clean;CopyDependencies;SetAssemblyFileVersion;ReplaceProjectImportStatements;BeforeCompile;CoreCompile;AfterCompile" />
@@ -68,7 +72,25 @@
 			<SolutionsToBuild Include="$(CSharpSourceDirectory)**\*.sln" />
 		</ItemGroup>
 	</Target>
-	<Target Name="AfterCompile" />
+	<Target Name="AfterCompile">
+	
+		<!-- restore db project file -->
+		<ItemGroup>
+			<_OriginalDbProjectFiles Remove="@(_OriginalDbProjectFiles)" />
+			<_OriginalDbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj.original" />
+			
+			<OriginalDbProjectFiles Remove="@(OriginalDbProjectFiles)" />
+			<OriginalDbProjectFiles Include="%(_OriginalDbProjectFiles.FullPath)">
+				<DestinationFile>$([System.String]::Copy('%(_OriginalDbProjectFiles.FullPath)').Replace(".original",""))</DestinationFile>
+			</OriginalDbProjectFiles>
+		</ItemGroup>
+		
+		<Message Text="OriginalDbProjectFiles: @(OriginalDbProjectFiles)" />
+
+		<Copy SourceFiles="@(OriginalDbProjectFiles)" DestinationFiles="%(OriginalDbProjectFiles.DestinationFile)" />
+		<Delete Files="@(OriginalDbProjectFiles)" />
+	
+	</Target>
     <Target Name="CoreCompile" Inputs="%(SolutionsToBuild.RootDir)%(SolutionsToBuild.Directory)" Outputs="NonExistingOutputToTriggerTargetForEverySolution">
 		<Error Text="There are no solutions to compile!" Condition=" @(SolutionsToBuild) == '' " />
 
@@ -377,7 +399,7 @@
 
 	<Target Name="ReleaseWebsites">
 		<ItemGroup>
-			<ProjectsToRelease Include="$(SourceDirectory)**\*.$(WebsiteProjectConventionName).csproj">
+			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(WebsiteProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>True</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern></FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
@@ -386,7 +408,7 @@
 
 	<Target Name="ReleaseWebServices">
 		<ItemGroup>
-			<ProjectsToRelease Include="$(SourceDirectory)**\*.$(WebServiceProjectConventionName).csproj">
+			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(WebServiceProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>True</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern></FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
@@ -395,7 +417,7 @@
 
 	<Target Name="ReleaseConsoleApps">
 		<ItemGroup>
-			<ProjectsToRelease Include="$(SourceDirectory)**\*.$(ConsoleAppProjectConventionName).csproj">
+			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(ConsoleAppProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern>bin\$(Configuration)\*</FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
@@ -404,7 +426,7 @@
 
 	<Target Name="ReleaseServices">
 		<ItemGroup>
-			<ProjectsToRelease Include="$(SourceDirectory)**\*.$(WindowsServiceProjectConventionName).csproj">
+			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(WindowsServiceProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern>bin\$(Configuration)\*</FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
@@ -413,7 +435,7 @@
 
 	<Target Name="ReleaseWorkers">
 		<ItemGroup>
-			<ProjectsToRelease Include="$(SourceDirectory)**\*.$(WorkerProjectConventionName).csproj">
+			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(WorkerProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern></FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
@@ -422,7 +444,7 @@
 
 	<Target Name="ReleaseStaticHtml">
 		<ItemGroup>
-			<ProjectsToRelease Include="$(SourceDirectory)**\*.$(StaticHtmlProjectConventionName)\index.html">
+			<ProjectsToRelease Include="$(HtmlSourceDirectory)**\*.$(StaticHtmlProjectConventionName)\index.html">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern>**\*</FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
@@ -431,7 +453,7 @@
 
 	<Target Name="ReleaseDatabases">
 		<ItemGroup>
-			<ProjectsToRelease Include="$(SourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj">
+			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern>sql\$(Configuration)\*</FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
@@ -572,7 +594,7 @@
 	<Target Name="ReleaseAzure" DependsOnTargets="_BeforeReleaseAzure;BeforeReleaseAzure;CoreReleaseAzure;AfterReleaseAzure" />
 	<Target Name="_BeforeReleaseAzure">
 		<ItemGroup>
-			<_AzureToRelease Include="$(SourceDirectory)**\*.$(AzureProjectConventionName).ccproj" />
+			<_AzureToRelease Include="$(CSharpSourceDirectory)**\*.$(AzureProjectConventionName).ccproj" />
 		</ItemGroup>	
 	</Target>
 	<Target Name="BeforeReleaseAzure" Inputs="%(_AzureToRelease.RootDir)%(_AzureToRelease.Directory)" Outputs="AlwaysExecute">
@@ -703,7 +725,7 @@
 	<Target Name="DeployWebsite" DependsOnTargets="BeforeDeployWebsite;CoreDeployWebsite;AfterDeployWebsite" />
 	<Target Name="BeforeDeployWebsite">
 		<ItemGroup>
-			<_WebsitesToDeploy Include="$(SourceDirectory)**\*.$(WebsiteProjectConventionName).csproj" />
+			<_WebsitesToDeploy Include="$(CSharpSourceDirectory)**\*.$(WebsiteProjectConventionName).csproj" />
 			<WebsitesToDeploy Include="@(_WebsitesToDeploy)" Condition = " %(_WebsitesToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>	
@@ -729,7 +751,7 @@
 	<Target Name="DeployWebService" DependsOnTargets="BeforeDeployWebService;CoreDeployWebService;AfterDeployWebService" />
 	<Target Name="BeforeDeployWebService">
 		<ItemGroup>
-			<_WebServicesToDeploy Include="$(SourceDirectory)**\*.$(WebServiceProjectConventionName).csproj" />
+			<_WebServicesToDeploy Include="$(CSharpSourceDirectory)**\*.$(WebServiceProjectConventionName).csproj" />
 			<WebServicesToDeploy Include="@(_WebServicesToDeploy)" Condition = " %(_WebServicesToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>
@@ -740,7 +762,7 @@
 	<Target Name="DeployConsoleApp" DependsOnTargets="BeforeDeployConsoleApp;CoreDeployConsoleApp;AfterDeployConsoleApp" />
 	<Target Name="BeforeDeployConsoleApp">
 		<ItemGroup>
-			<_ConsoleAppsToDeploy Include="$(SourceDirectory)**\*.$(ConsoleAppProjectConventionName).csproj" />
+			<_ConsoleAppsToDeploy Include="$(CSharpSourceDirectory)**\*.$(ConsoleAppProjectConventionName).csproj" />
 			<ConsoleAppsToDeploy Include="@(_ConsoleAppsToDeploy)" Condition = " %(_ConsoleAppsToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>
@@ -751,7 +773,7 @@
 	<Target Name="DeployService" DependsOnTargets="BeforeDeployService;CoreDeployService;AfterDeployService" />
 	<Target Name="BeforeDeployService">
 		<ItemGroup>
-			<_ServicesToDeploy Include="$(SourceDirectory)**\*.$(WindowsServiceProjectConventionName).csproj" />
+			<_ServicesToDeploy Include="$(CSharpSourceDirectory)**\*.$(WindowsServiceProjectConventionName).csproj" />
 			<ServicesToDeploy Include="@(_ServicesToDeploy)" Condition = " %(_ServicesToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>
@@ -762,7 +784,7 @@
 	<Target Name="DeployDatabase" DependsOnTargets="BeforeDeployDatabase;CoreDeployDatabase;AfterDeployDatabase" />
 	<Target Name="BeforeDeployDatabase">
 		<ItemGroup>
-			<_DatabasesToDeploy Include="$(SourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj" />
+			<_DatabasesToDeploy Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj" />
 			<DatabasesToDeploy Include="@(_DatabasesToDeploy)" Condition = " %(_DatabasesToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>
@@ -791,7 +813,7 @@
 	<Target Name="DeployAzure" DependsOnTargets="BeforeDeployAzure;CoreDeployAzure;AfterDeployAzure" />
 	<Target Name="BeforeDeployAzure">
 		<ItemGroup>
-			<_AzureToDeploy Include="$(SourceDirectory)**\*.$(AzureProjectConventionName).ccproj" />
+			<_AzureToDeploy Include="$(CSharpSourceDirectory)**\*.$(AzureProjectConventionName).ccproj" />
 			<AzureToDeploy Include="@(_AzureToDeploy)" Condition = " %(_AzureToDeploy.Filename) == $(ProjectToDeploy) " />
 		</ItemGroup>
 	</Target>

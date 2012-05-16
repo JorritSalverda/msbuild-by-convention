@@ -23,6 +23,7 @@
 # Logs and databases #
 ######################
 *.log
+# *.sql
 *.sqlite
 
 # OS generated files #
@@ -32,19 +33,20 @@ ehthumbs.db
 Icon?
 Thumbs.db
 
-# https://github.com/JorritSalverda/msbuild-by-convention additions #
+# Jorrit's additions #
 ######################
-bin/*
-Bin/*
-obj/*
-sql/*
+bin/
+Bin/
+obj/
+sql/
+csx/
 *ReSharper*
-Build/Bin/*
-Build/Coverage/*
-Build/IntegrationTestResults/*
-Build/Releases/*
-Build/TestResults/*
-Build/CodeAnalysis/*
+Build/Bin/
+Build/Coverage/
+Build/IntegrationTestResults/
+Build/Releases/
+Build/TestResults/
+Build/CodeAnalysis/
 *.suo
 *.dbmdl
 *GeneratedSetVersionFile*

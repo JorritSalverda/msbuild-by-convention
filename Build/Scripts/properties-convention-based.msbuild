@@ -104,6 +104,7 @@
 		
 		<!-- limit the amount of environments the release is created for: /p:ConfigurationsToRelease="UAT;PROD" -->
 		<ConfigurationsToRelease Include="$(ConfigurationsToRelease)" />
+		<ConfigurationsToRelease Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(ConfigurationsToRelease) != '' " />
 	</ItemGroup>		
 			
 	<!-- tasks used for nunit, attrib en other tasks -->
