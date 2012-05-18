@@ -733,7 +733,7 @@
 	</Target>
 	<Target Name="CoreDeployWebService" Inputs="%(WebServicesToDeploy.RootDir)%(WebServicesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
 	
-		<!-- todo deploy with msbuild or robocopy -->
+		<!-- todo deploy with msdeploy or robocopy -->
 	
 	</Target>
 
@@ -746,7 +746,7 @@
 	</Target>
 	<Target Name="CoreDeployConsoleApp" Inputs="%(ConsoleAppsToDeploy.RootDir)%(ConsoleAppsToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
 	
-		<!-- todo deploy with msbuild or robocopy -->
+		<!-- todo deploy with msdeploy or robocopy -->
 	
 	</Target>
 
@@ -759,7 +759,7 @@
 	</Target>
 	<Target Name="CoreDeployService" Inputs="%(ServicesToDeploy.RootDir)%(ServicesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
 	
-		<!-- todo deploy with msbuild or robocopy -->
+		<!-- todo deploy with msdeploy or robocopy -->
 	
 	</Target>
 
