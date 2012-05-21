@@ -379,7 +379,7 @@
 		<ItemGroup>
 			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(WebsiteProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>True</UseAspNetCompilerForRelease>
-				<FilesToCopyForReleasePattern></FilesToCopyForReleasePattern>
+				<FilesToCopyForReleasePattern></FilesToCopyForReleasePattern>				
 			</ProjectsToRelease>
 		</ItemGroup>	
 	</Target>
@@ -415,7 +415,7 @@
 		<ItemGroup>
 			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(WorkerProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
-				<FilesToCopyForReleasePattern></FilesToCopyForReleasePattern>
+				<FilesToCopyForReleasePattern>bin\$(Configuration)\*</FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
 		</ItemGroup>	
 	</Target>
@@ -555,15 +555,23 @@
 		<!-- copy files to a separate directory for each environment and update version number in filenames -->
 		<Copy SourceFiles="@(FilesToMove)" DestinationFiles="$(ReleaseDirectory)%(FilesToMove.Environment)\%(FilesToMove.RecursiveDir)$([System.String]::Copy('%(FilesToMove.Filename)').Replace('1.0.0.0',$(BuildVersion)))%(FilesToMove.Extension)" />
 
+		<!-- create release directory if it does not exist yet -->
+		<MakeDir Directories="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)" Condition=" !Exists('$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)') " />
+		
 		<!-- transform *.config -->
 		<TransformXml Source="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).config" Destination="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\%(ConfigsToTransform.Identity).config" Transform="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config" Condition=" Exists('$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config') " />
 
-		<!-- if target has a *.dll.config then overwrite it with a transformed version -->
+		<!-- rename transformed app.config to *.dll.config -->
 		<PropertyGroup>
-			<ConfigTargetName>%(ProjectsToRelease.Filename).dll.config</ConfigTargetName>
+			<DllConfigName>%(ProjectsToRelease.Filename).dll.config</DllConfigName>
+			<DllConfigDirectory>$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)</DllConfigDirectory>
+			<DllConfigDirectory Condition=" Exists('$(DllConfigDirectory)bin\') ">$(DllConfigDirectory)bin\</DllConfigDirectory>
+			<DllConfigPath>$(DllConfigDirectory)$(DllConfigName)</DllConfigPath>
+			<AppConfigPath>$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\App.config</AppConfigPath>
 		</PropertyGroup>
-		<TransformXml Source="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).config" Destination="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\$(ConfigTargetName)" Transform="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config" Condition=" Exists('$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config') And Exists('$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\$(ConfigTargetName)') " />
-
+		<Copy SourceFiles="$(AppConfigPath)" DestinationFiles="$(DllConfigPath)" Condition=" Exists('$(AppConfigPath)') " />
+		<Delete Files="$(AppConfigPath)" />
+		
 		<!-- remove temporary directory -->
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(ReleaseTempDirectory)" Condition=" Exists('$(ReleaseTempDirectory)') " />
 		<RemoveDir Directories="$(ReleaseTempDirectory)" />
