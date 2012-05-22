@@ -53,3 +53,4 @@ Static/Css/[a-zA-Z0-9\.\-/]*.min.css
 Static/Js/[a-zA-Z0-9\.\-]*.min.js
 *.testsettings
 .hg/*
+*.DotSettings.user
