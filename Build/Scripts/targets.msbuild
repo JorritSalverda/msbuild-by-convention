@@ -554,9 +554,9 @@
 
 		<!-- copy files to a separate directory for each environment and update version number in filenames -->
 		<Copy SourceFiles="@(FilesToMove)" DestinationFiles="$(ReleaseDirectory)%(FilesToMove.Environment)\%(FilesToMove.RecursiveDir)$([System.String]::Copy('%(FilesToMove.Filename)').Replace('1.0.0.0',$(BuildVersion)))%(FilesToMove.Extension)" />
-
+		
 		<!-- create release directory if it does not exist yet -->
-		<MakeDir Directories="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)" Condition=" !Exists('$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)') " />
+		<MakeDir Directories="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" Condition=" !Exists('$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)') " />
 		
 		<!-- transform *.config -->
 		<TransformXml Source="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).config" Destination="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\%(ConfigsToTransform.Identity).config" Transform="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config" Condition=" Exists('$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config') " />
@@ -564,13 +564,16 @@
 		<!-- rename transformed app.config to *.dll.config -->
 		<PropertyGroup>
 			<DllConfigName>%(ProjectsToRelease.Filename).dll.config</DllConfigName>
-			<DllConfigDirectory>$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)</DllConfigDirectory>
-			<DllConfigDirectory Condition=" Exists('$(DllConfigDirectory)bin\') ">$(DllConfigDirectory)bin\</DllConfigDirectory>
-			<DllConfigPath>$(DllConfigDirectory)$(DllConfigName)</DllConfigPath>
-			<AppConfigPath>$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\App.config</AppConfigPath>
 		</PropertyGroup>
-		<Copy SourceFiles="$(AppConfigPath)" DestinationFiles="$(DllConfigPath)" Condition=" Exists('$(AppConfigPath)') " />
-		<Delete Files="$(AppConfigPath)" />
+		<ItemGroup>
+			<AppConfigToMove Remove="@(AppConfigToMove)" />
+			<AppConfigToMove Include="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)App.config" Condition=" Exists('$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)App.config') ">
+				<TargetFile>$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)$(DllConfigName)</TargetFile>
+				<TargetFile Condition=" Exists('$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)bin\') ">$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)bin\$(DllConfigName)</TargetFile>
+			</AppConfigToMove>
+		</ItemGroup>		
+		<Copy SourceFiles="%(AppConfigToMove.FullPath)" DestinationFiles="%(AppConfigToMove.TargetFile)" />
+		<Delete Files="%(AppConfigToMove.FullPath)" />
 		
 		<!-- remove temporary directory -->
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(ReleaseTempDirectory)" Condition=" Exists('$(ReleaseTempDirectory)') " />
