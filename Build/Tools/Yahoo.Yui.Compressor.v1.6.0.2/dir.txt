@@ -1,4 +1,0 @@
-
-02-01-2012  14:39           350.208 EcmaScript.NET.modified.dll
-02-01-2012  14:39            54.784 Yahoo.Yui.Compressor.dll
-02-01-2012  14:39            22.528 Yahoo.Yui.Compressor.MsBuildTask.dll
