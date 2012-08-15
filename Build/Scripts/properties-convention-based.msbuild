@@ -26,7 +26,7 @@
 		<NUnitToolPath>$(BuildToolsDirectory)NUnit-2.6.0.12051\</NUnitToolPath>
 		<MSpecRunnerPath>$(BuildToolsDirectory)Machine.Specifications.0.5.7\tools\mspec-clr4.exe</MSpecRunnerPath>
 		<MSBuildCommunityTasksPath>$(BuildToolsDirectory)MSBuild.Community.Tasks.v1.2.0.306\MSBuild.Community.Tasks.dll</MSBuildCommunityTasksPath>
-		<YUICompressorPath>$(BuildToolsDirectory)YUICompressor.NET-MsBuild-Task.1.7.0.0\</YUICompressorPath>
+		<YUICompressorPath>$(BuildToolsDirectory)YUICompressor.NET.MSBuild.2.0.0.0\</YUICompressorPath>
 		<ExtensionTasksPath>$(BuildToolsDirectory)MSBuild.ExtensionPack.Binaries.v4.0.2.0\MSBuild.ExtensionPack.dll</ExtensionTasksPath>
 		<FxCopPath>$(BuildToolsDirectory)FxCop.v10.0\</FxCopPath>
 		<MsDeployPath>$(BuildToolsDirectory)MsDeploy.v2\msdeploy.exe</MsDeployPath>
@@ -119,7 +119,8 @@
 	<UsingTask AssemblyFile="$(ExtensionTasksPath)" TaskName="MSBuild.ExtensionPack.CodeQuality.FxCop"/>
 			
     <!-- used for minifying javascript and css -->			
-	<UsingTask TaskName="CompressorTask" AssemblyFile="$(YUICompressorPath)Yahoo.Yui.Compressor.MsBuildTask.dll" />
+	<UsingTask TaskName="CssCompressorTask" AssemblyFile="$(YUICompressorPath)Yahoo.Yui.Compressor.Build.MsBuild.dll" />
+    <UsingTask TaskName="JavaScriptCompressorTask" AssemblyFile="$(YUICompressorPath)Yahoo.Yui.Compressor.Build.MsBuild.dll" />	
 				
     <!-- teamcity uses a custom nunit task to be able to import the output -->				
 	<UsingTask TaskName="NUnit" AssemblyFile="$(teamcity_dotnet_nunitlauncher_msbuild_task)" Condition=" '$(teamcity_dotnet_nunitlauncher_msbuild_task)' != '' "/>				

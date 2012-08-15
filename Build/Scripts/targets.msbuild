@@ -227,16 +227,16 @@
             <Output TaskParameter="OutputItems" ItemName="JavaScriptSubDirectory" />
         </MSBuild.ExtensionPack.Framework.MsBuildHelper>
 
-		<CompressorTask
-			JavaScriptFiles="@(JavaScriptFiles)"
-			JavaScriptOutputFile="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)..\@(JavaScriptSubDirectory)-$(BuildVersion).min.js"
+		<JavaScriptCompressorTask
+			SourceFiles="@(JavaScriptFiles)"
+			OutputFile="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)..\@(JavaScriptSubDirectory)-$(BuildVersion).min.js"
 			ObfuscateJavaScript="True"
 			PreserveAllSemicolons="False"
-			DisableOptimizations="Nope"
+			DisableOptimizations="False"
 			EncodingType="UTF8"
-			DeleteJavaScriptFiles="false"
+			DeleteSourceFiles="false"
 			LineBreakPosition="-1"
-			LoggingType="ALittleBit"
+			LoggingType="Info"
 			ThreadCulture="en-US"
 			IsEvalIgnored="false"
 			/>
@@ -264,18 +264,14 @@
             <Output TaskParameter="OutputItems" ItemName="CssSubDirectory" />
         </MSBuild.ExtensionPack.Framework.MsBuildHelper>
 
-		<CompressorTask
-			CssFiles="@(CssFiles)"
-			CssOutputFile="%(CssFiles.RootDir)%(CssFiles.Directory)@(CssSubDirectory)-$(BuildVersion).min.css"
-			CssCompressionType="YuiStockCompression"
-			PreserveAllSemicolons="False"
-			DisableOptimizations="Nope"
+		<CssCompressorTask
+			SourceFiles="@(CssFiles)"
+			OutputFile="%(CssFiles.RootDir)%(CssFiles.Directory)@(CssSubDirectory)-$(BuildVersion).min.css"
+			CompressionType="Standard"
 			EncodingType="UTF8"
-			DeleteCssFiles="false"
+			DeleteSourceFiles="false"
 			LineBreakPosition="-1"
-			LoggingType="ALittleBit"
-			ThreadCulture="en-US"
-			IsEvalIgnored="false"
+			LoggingType="Info"
 			/>
 	</Target>
 
