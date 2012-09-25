@@ -123,7 +123,7 @@
 		<ItemGroup>
 			<TestAssemblies Remove="@(TestAssemblies)" />
 			<TestAssemblies Include="%(UnitTestProjects.RelativeDir)bin\$(Configuration)\%(UnitTestProjects.Filename).dll" />
-		</ItemGroup>
+		</ItemGroup>		
 
 		<!-- filter out test assemblies if nunit.framework.dll is not referenced -->
 		<ItemGroup>
@@ -140,6 +140,16 @@
 		</ItemGroup>
 
 		<Exec Command="$(MSpecRunnerPath) --teamcity --html $(TestResultsDirectory) @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " IgnoreExitCode="$(ContinueOnTestError)" />
+		
+		<!-- filter out test assemblies if Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll is not referenced -->
+		<ItemGroup>
+			<MSTestTestAssemblies Remove="@(MSTestTestAssemblies)" />
+			<MSTestTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll') " />
+		</ItemGroup>
+
+		<Delete Files="$(TestResultsDirectory)MsTest.%(MSTestTestAssemblies.Filename).Results.xml" />		
+		<Exec Command="$(MSTestRunnerPath) /testcontainer:%(MSTestTestAssemblies.Identity) /resultsfile:$(TestResultsDirectory)MsTest.%(MSTestTestAssemblies.Filename).Results.xml /nologo" Condition=" @(MSTestTestAssemblies) != '' " IgnoreExitCode="$(ContinueOnTestError)" />
+		
 	</Target>
 
 	<!-- endregion RunUnitTests targets -->
@@ -369,6 +379,11 @@
 		<PropertyGroup>
 			<CompileTarget>Clean;Rebuild</CompileTarget>
 		</PropertyGroup>
+		
+		<ItemGroup>
+			<AllEnvironmentsToRelease Remove="@(AllEnvironmentsToRelease)" />
+		</ItemGroup>	
+		
 	</Target>
 
 	<Target Name="ReleaseWebsites">
@@ -491,14 +506,14 @@
 			<AllJpegFiles Include="$(ProjectReleaseDirectory)**\*.jpg" />
 			<AllJpegFiles Include="$(ProjectReleaseDirectory)**\*.jpeg" />
 		</ItemGroup>
-		<Exec Command="&quot;$(JpegtranPath)&quot; -progressive -optimize &quot;%(AllJpegFiles.FullPath)&quot; &quot;%(AllJpegFiles.FullPath)&quot;" Condition=" @(AllJpegFiles) != '' " />
+		<Exec Command="&quot;$(JpegtranPath)&quot; -progressive -optimize &quot;%(AllJpegFiles.FullPath)&quot; &quot;%(AllJpegFiles.FullPath)&quot;" Condition=" @(AllJpegFiles) != '' And $(OptimizeImages) " />
 
 		<!-- optimize all pngs -->
 		<ItemGroup>
 			<AllPngFiles Remove="@(AllPngFiles)" />
 			<AllPngFiles Include="$(ProjectReleaseDirectory)**\*.png" />
 		</ItemGroup>
-		<Exec Command="&quot;$(OptiPngPath)&quot; &quot;%(AllPngFiles.FullPath)&quot;" Condition=" @(AllPngFiles) != '' " />
+		<Exec Command="&quot;$(OptiPngPath)&quot; &quot;%(AllPngFiles.FullPath)&quot;" Condition=" @(AllPngFiles) != '' And $(OptimizeImages) " />
 
 		<!-- determine all environments from *.*.config -->
 		<ItemGroup>
@@ -511,6 +526,7 @@
 			<_AllEnvironments Remove="@(AllEnvironments)" />
 			<AllEnvironments Remove="@(AllEnvironments)" />
 
+			
 			<_AllConfigsWithTransforms Remove="@(_AllConfigsWithTransforms)" />
 			<_AllConfigsWithTransforms Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[0])" Condition=" @(AllEnvironmentTransforms) != '' " />
 			<AllConfigsWithTransforms Remove="@(AllConfigsWithTransforms)" />
@@ -531,6 +547,7 @@
 		<!--  or keep all environments if @(ConfigurationsToRelease) is empty -->
 		<ItemGroup>
 			<AllEnvironments Include="@(_AllEnvironments)" Condition=" @(ConfigurationsToRelease) == '' " />
+			<AllEnvironmentsToRelease Include="@(AllEnvironments)" />
 		</ItemGroup>
 
 		<ItemGroup>
@@ -574,6 +591,7 @@
 		<!-- remove temporary directory -->
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(ReleaseTempDirectory)" Condition=" Exists('$(ReleaseTempDirectory)') " />
 		<RemoveDir Directories="$(ReleaseTempDirectory)" />
+					
 	</Target>
 
 	<Target Name="ReleaseAzure" DependsOnTargets="_BeforeReleaseAzure;BeforeReleaseAzure;CoreReleaseAzure" />
@@ -599,7 +617,7 @@
 			<__AllEnvironments Include="$(SuitedForAllEnvironmentsDirectoryName)" Condition=" @(AllEnvironmentTransforms) == '' " />
 			<__AllEnvironments Include="$([System.String]::Copy('%(AllEnvironmentTransforms.Filename)').Split('.')[1])" Condition=" @(AllEnvironmentTransforms) != '' " />
 			<_AllEnvironments Remove="@(AllEnvironments)" />
-			<AllEnvironments Remove="@(AllEnvironments)" />
+			<AllEnvironments Remove="@(AllEnvironments)" />			
 		</ItemGroup>
 
 		<!-- remove duplicates -->
@@ -614,6 +632,7 @@
 		<!--  or keep all environments if @(ConfigurationsToRelease) is empty -->
 		<ItemGroup>
 			<AllEnvironments Include="@(_AllEnvironments)" Condition=" @(ConfigurationsToRelease) == '' " />
+			<AllEnvironmentsToRelease Include="@(AllEnvironments)" />
 		</ItemGroup>
 
 		<!-- not sure if this works properly if different azure projects have different environment transforms -->
@@ -700,6 +719,27 @@
 	
 		<!-- throw an error if there was nothing to release -->
 		<Error Text="There are no projects to be released!" Condition=" @(AllProjectsToRelease) == '' " />
+				
+		<!-- remove duplicates from AllEnvironmentsToRelease -->
+		<Message Text="AllEnvironmentsToRelease: @(AllEnvironmentsToRelease)" />
+		
+        <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(AllEnvironmentsToRelease)" Condition=" @(AllEnvironmentsToRelease) != '' ">
+            <Output TaskParameter="OutputItems" ItemName="AllEnvironmentsToReleaseCleaned"/>
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
+
+		<Message Text="AllEnvironmentsToReleaseCleaned: @(AllEnvironmentsToReleaseCleaned)" />
+		
+		<ItemGroup>
+			<ItemsToCopyToReleaseItemGroup Remove="@(ItemsToCopyToReleaseItemGroup)" />
+			<ItemsToCopyToReleaseItemGroup Include="@(ItemsToCopyToRelease)">
+				<Environment>%(AllEnvironmentsToReleaseCleaned.Identity)</Environment>
+			</ItemsToCopyToReleaseItemGroup>
+		</ItemGroup>
+		
+		<Message Text="ItemsToCopyToReleaseItemGroup: @(ItemsToCopyToReleaseItemGroup)" />
+				
+		<Copy SourceFiles="@(ItemsToCopyToReleaseItemGroup)" DestinationFiles="$(ReleaseDirectory)%(ItemsToCopyToReleaseItemGroup.Environment)\bla\bla\%(ItemsToCopyToReleaseItemGroup.Identity)" />
+
 	</Target>	
 
 	<!-- endregion Release targets -->
@@ -709,33 +749,32 @@
 	<Target Name="DeployWebsite" DependsOnTargets="BeforeDeployWebsite;CoreDeployWebsite" />
 	<Target Name="BeforeDeployWebsite">
 		<ItemGroup>
-			<_WebsitesToDeploy Include="$(CSharpSourceDirectory)**\*.$(WebsiteProjectConventionName).csproj" />
-			<WebsitesToDeploy Include="@(_WebsitesToDeploy)" Condition = " %(_WebsitesToDeploy.Filename) == $(ProjectToDeploy) " />
+			<WebsitesToDeploy Include="$(ReleaseDirectory)\$(DeployEnvironment)\**\$(ProjectToDeploy)\Web.config" />
+			<WebsitesToDeploy Include="$(BaseDirectory)**\$(ProjectToDeploy)\Web.config" Condition=" !Exists('$(ReleaseDirectory)') " />
 		</ItemGroup>
 	</Target>	
 	<Target Name="CoreDeployWebsite" Inputs="%(WebsitesToDeploy.RootDir)%(WebsitesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
 		<!-- call targets 'Deploy' with parameters '/p:DeployEnvironment=<environment to deploy to>;ProjectToDeploy=<project filename without extension>;DeployServer=<server - with msdeploy installed - to deploy to>;DeployTargetName=<iis sitename to update>;DeployUsername=<msdeploy user>;DeployPassword=<msdeploy password>' -->
 
-		<Error Condition = " '$(DeployEnvironment)' == '' " Text="Please set parameter DeployEnvironment to select the proper artifacts to deploy." />
-		
-		<!-- resolve the release directory -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(WebsitesToDeploy.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
-            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<ConvertToAbsolutePath Paths="$(ReleaseDirectory)$(DeployEnvironment)\$(RelativeProjectReleaseDirectory)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="ProjectReleaseDirectory" />
-		</ConvertToAbsolutePath>
-		
-		<Error Condition = " !Exists('$(ProjectReleaseDirectory)') " Text="The artifacts at location $(ProjectReleaseDirectory) do not exist. Check if you performed a full release or you project has a config transform for this specific environment." />	
+		<Error Condition = " '$(DeployEnvironment)' == '' And Exists('$(ReleaseDirectory)') " Text="Please set parameter DeployEnvironment to select the proper artifacts to deploy." />
 
-		<Exec Command="&quot;$(MsDeployPath)&quot; -verb:sync -source:contentpath=&quot;$(ProjectReleaseDirectory)&quot; -dest:contentpath=&quot;$(DeployTargetName)&quot;,wmsvc=$(DeployServer),username=$(DeployUsername),password=$(DeployPassword) -allowUntrusted" />
+		<PropertyGroup>
+			<MSDeploySkipDirectoryParameter Condition=" $(DeploySkipDirectoryPattern) != '' ">-skip:objectName=dirPath,absolutePath=&quot;$(DeploySkipDirectoryPattern)&quot;</MSDeploySkipDirectoryParameter>
+			<MSDeploySkipFileParameter Condition=" $(DeploySkipFilePattern) != '' ">-skip:objectName=filePath,absolutePath=&quot;$(DeploySkipFilePattern)&quot;</MSDeploySkipFileParameter>
+			<ProjectReleaseDirectory>%(WebsitesToDeploy.RootDir)%(WebsitesToDeploy.Directory)</ProjectReleaseDirectory>
+		</PropertyGroup>
+				
+		<Exec Command="&quot;$(MsDeployPath)&quot; -verb:sync -source:contentpath=&quot;$(ProjectReleaseDirectory)&quot; -dest:contentpath=&quot;$(DeployTargetName)&quot;,wmsvc=$(DeployServer),username=$(DeployUsername),password=$(DeployPassword) -allowUntrusted $(MSDeploySkipDirectoryParameter) $(MSDeploySkipFileParameter)" />
+		
+		<HttpRequest Url="$(DeployWarmupUrl)" FailOnNon2xxResponse="true" Condition=" $(DeployWarmupUrl) != '' " />
+		
 	</Target>
 
 	<Target Name="DeployWebService" DependsOnTargets="BeforeDeployWebService;CoreDeployWebService" />
 	<Target Name="BeforeDeployWebService">
-		<ItemGroup>
-			<_WebServicesToDeploy Include="$(CSharpSourceDirectory)**\*.$(WebServiceProjectConventionName).csproj" />
-			<WebServicesToDeploy Include="@(_WebServicesToDeploy)" Condition = " %(_WebServicesToDeploy.Filename) == $(ProjectToDeploy) " />
+		<ItemGroup>		
+			<WebServicesToDeploy Include="$(ReleaseDirectory)\$(DeployEnvironment)\**\$(ProjectToDeploy)\Web.config" />
+			<WebServicesToDeploy Include="$(BaseDirectory)**\$(ProjectToDeploy)\Web.config" Condition=" !Exists('$(ReleaseDirectory)') " />			
 		</ItemGroup>
 	</Target>
 	<Target Name="CoreDeployWebService" Inputs="%(WebServicesToDeploy.RootDir)%(WebServicesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
@@ -747,8 +786,8 @@
 	<Target Name="DeployConsoleApp" DependsOnTargets="BeforeDeployConsoleApp;CoreDeployConsoleApp" />
 	<Target Name="BeforeDeployConsoleApp">
 		<ItemGroup>
-			<_ConsoleAppsToDeploy Include="$(CSharpSourceDirectory)**\*.$(ConsoleAppProjectConventionName).csproj" />
-			<ConsoleAppsToDeploy Include="@(_ConsoleAppsToDeploy)" Condition = " %(_ConsoleAppsToDeploy.Filename) == $(ProjectToDeploy) " />
+			<ConsoleAppsToDeploy Include="$(ReleaseDirectory)\$(DeployEnvironment)\**\$(ProjectToDeploy)\*.config" />	
+			<ConsoleAppsToDeploy Include="$(BaseDirectory)**\$(ProjectToDeploy)\*.config" Condition=" !Exists('$(ReleaseDirectory)') " />			
 		</ItemGroup>
 	</Target>
 	<Target Name="CoreDeployConsoleApp" Inputs="%(ConsoleAppsToDeploy.RootDir)%(ConsoleAppsToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
@@ -759,9 +798,9 @@
 
 	<Target Name="DeployService" DependsOnTargets="BeforeDeployService;CoreDeployService" />
 	<Target Name="BeforeDeployService">
-		<ItemGroup>
-			<_ServicesToDeploy Include="$(CSharpSourceDirectory)**\*.$(WindowsServiceProjectConventionName).csproj" />
-			<ServicesToDeploy Include="@(_ServicesToDeploy)" Condition = " %(_ServicesToDeploy.Filename) == $(ProjectToDeploy) " />
+		<ItemGroup>			
+			<ServicesToDeploy Include="$(ReleaseDirectory)\$(DeployEnvironment)\**\$(ProjectToDeploy)\*.config" />
+			<ServicesToDeploy Include="$(BaseDirectory)**\$(ProjectToDeploy)\*.config" Condition=" !Exists('$(ReleaseDirectory)') " />						
 		</ItemGroup>
 	</Target>
 	<Target Name="CoreDeployService" Inputs="%(ServicesToDeploy.RootDir)%(ServicesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
@@ -773,49 +812,56 @@
 	<Target Name="DeployDatabase" DependsOnTargets="BeforeDeployDatabase;CoreDeployDatabase" />
 	<Target Name="BeforeDeployDatabase">
 		<ItemGroup>
-			<_DatabasesToDeploy Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj" />
-			<DatabasesToDeploy Include="@(_DatabasesToDeploy)" Condition = " %(_DatabasesToDeploy.Filename) == $(ProjectToDeploy) " />
+			<DatabasesToDeploy Include="$(ReleaseDirectory)\$(SuitedForAllEnvironmentsDirectoryName)\**\$(ProjectToDeploy).dbschema" />			
+			<DatabasesToDeploy Include="$(BaseDirectory)**\$(ProjectToDeploy).dbschema" Condition=" !Exists('$(ReleaseDirectory)') " />						
 		</ItemGroup>
 	</Target>
 	<Target Name="CoreDeployDatabase" Inputs="%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
 		<!-- call targets 'Deploy' with parameters '/p:ProjectToDeploy=<database project filename without extension>;DeployServer=<database-server to deploy to>;DeployTargetName=<database name on the server to update>;DeployUsername=<msdeploy user>;DeployPassword=<msdeploy password>' -->
-
-		<!-- resolve the relative release directory -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(DatabasesToDeploy.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
-            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
 				
 		<PropertyGroup>
-			<DbSchemaPath>$(ReleaseDirectory)$(SuitedForAllEnvironmentsDirectoryName)\$(RelativeProjectReleaseDirectory)\%(DatabasesToDeploy.Filename).dbschema</DbSchemaPath>
-			<DacPacPath>$(ReleaseDirectory)$(SuitedForAllEnvironmentsDirectoryName)\$(RelativeProjectReleaseDirectory)\%(DatabasesToDeploy.Filename).dacpac</DacPacPath>
+			<DbSchemaPath>%(DatabasesToDeploy.FullPath)</DbSchemaPath>
 		</PropertyGroup>
 
 		<!-- deploy vs2010 database project -->
 		<Exec Command="&quot;$(DbDeployPath)&quot; /a:Deploy /dsp:Sql /dd+ /model:&quot;$(DbSchemaPath)&quot; /cs:&quot;Server=$(DeployServer);User=$(DeployUsername);Password=$(DeployPassword);Pooling=false&quot; /p:TargetDatabase=&quot;$(DeployTargetName)&quot;" Condition=" Exists('$(DbSchemaPath)') " />
 
+	</Target>
+	
+	<Target Name="DeployDataTierApplication" DependsOnTargets="BeforeDeployDataTierApplication;CoreDeployDataTierApplication" />
+	<Target Name="BeforeDeployDataTierApplication">
+		<ItemGroup>
+			<DataTierApplicationsToDeploy Include="$(ReleaseDirectory)\$(SuitedForAllEnvironmentsDirectoryName)\**\$(ProjectToDeploy).dacpac" />
+			<DataTierApplicationsToDeploy Include="$(BaseDirectory)**\$(ProjectToDeploy).dacpac" Condition=" !Exists('$(ReleaseDirectory)') " />
+		</ItemGroup>
+	</Target>
+	<Target Name="CoreDeployDataTierApplication" Inputs="%(DataTierApplicationsToDeploy.RootDir)%(DataTierApplicationsToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+		<!-- call targets 'Deploy' with parameters '/p:ProjectToDeploy=<database project filename without extension>;DeployServer=<database-server to deploy to>;DeployTargetName=<database name on the server to update>;DeployUsername=<msdeploy user>;DeployPassword=<msdeploy password>' -->
+				
+		<PropertyGroup>
+			<DacPacPath>%(DataTierApplicationsToDeploy.FullPath)</DacPacPath>
+		</PropertyGroup>
+
 		<!-- deploy data-tier application project -->
 		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="&quot;$(SqlPowershellPath)&quot; -f &quot;$(DacDeployScript)&quot; &quot;$(DacPacPath)&quot; &quot;$(DeployServer)&quot; &quot;$(DeployUsername)&quot; &quot;$(DeployPassword)&quot; &quot;$(DeployTargetName)&quot;" Condition=" Exists('$(DacPacPath)') " CustomErrorRegularExpression="^[Exception^]" />
 
-	</Target>
+	</Target>	
 
 	<Target Name="DeployAzure" DependsOnTargets="BeforeDeployAzure;CoreDeployAzure" />
 	<Target Name="BeforeDeployAzure">
 		<ItemGroup>
-			<_AzureToDeploy Include="$(CSharpSourceDirectory)**\*.$(AzureProjectConventionName).ccproj" />
-			<AzureToDeploy Include="@(_AzureToDeploy)" Condition = " %(_AzureToDeploy.Filename) == $(ProjectToDeploy) " />
+			<AzureToDeploy Include="$(ReleaseDirectory)\$(DeployEnvironment)\**\$(ProjectToDeploy).cspkg" />
+			<AzureToDeploy Include="$(BaseDirectory)**\$(ProjectToDeploy).cspkg" Condition=" !Exists('$(ReleaseDirectory)') " />
 		</ItemGroup>
 	</Target>
 	<Target Name="CoreDeployAzure" Inputs="%(AzureToDeploy.RootDir)%(AzureToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
 		<!-- call targets 'Deploy' with parameters '/p:DeployEnvironment=<environment to deploy to>;ProjectToDeploy=<azure project filename without extension>;AzureSubscriptionID=<AzureSubscriptionID>;AzureCertificateFilename=<AzureCertificateFilename>;AzureCertificatePassword=<AzureCertificatePassword>;AzureHostedServiceName=<AzureHostedServiceName>;AzureStorageAccountName=<AzureStorageAccountName>;AzureStorageAccountKey=<AzureStorageAccountKey>;AzureSwapToProductionAfterDeploy=(True|False);AzureRemoveStagingAfterSwap=(True|False);AzureDisallowMultipleActiveInstances=(True|False)' -->
 
-		<Error Condition = " '$(DeployEnvironment)' == '' " Text="Please set parameter DeployEnvironment to select the proper artifacts to deploy." />
-		
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AzureToDeploy.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
-			<Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
-		</MSBuild.ExtensionPack.Framework.TextString>
-		<ConvertToAbsolutePath Paths="$(ReleaseDirectory)$(DeployEnvironment)\$(RelativeProjectReleaseDirectory)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="ProjectReleaseDirectory" />
-		</ConvertToAbsolutePath>
+		<Error Condition = " '$(DeployEnvironment)' == '' And Exists('$(ReleaseDirectory)') " Text="Please set parameter DeployEnvironment to select the proper artifacts to deploy." />
+			
+		<PropertyGroup>
+			<ProjectReleaseDirectory>%(AzureToDeploy.RootDir)%(AzureToDeploy.Directory)</ProjectReleaseDirectory>
+		</PropertyGroup>		
 		
 		<Error Condition = " !Exists('$(ProjectReleaseDirectory)') " Text="The artifacts at location $(ProjectReleaseDirectory) do not exist. Check if you performed a full release or you project has a config transform for this specific environment." />	
 		
@@ -840,6 +886,7 @@
 			<AllProjectsToDeploy Include="@(ConsoleAppsToDeploy)" />
 			<AllProjectsToDeploy Include="@(ServicesToDeploy)" />
 			<AllProjectsToDeploy Include="@(DatabasesToDeploy)" />
+			<AllProjectsToDeploy Include="@(DataTierApplicationsToDeploy)" />
 			<AllProjectsToDeploy Include="@(AzureToDeploy)" />
 		</ItemGroup>
 
@@ -850,6 +897,7 @@
 	
 	<!-- endregion Deploy targets -->
 	
+		
 	<!-- beginregion Delete targets -->	
 	
 	<Target Name="DeleteAzure" DependsOnTargets="BeforeDeleteAzure;CoreDeleteAzure" />
@@ -915,7 +963,7 @@
 	<Target Name="Release" DependsOnTargets="CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;AfterRelease" />
 	<Target Name="BuildAndRunUnitTestsAndRelease" DependsOnTargets="BeforeRelease;BuildAndRunUnitTests;Release" />
 
-	<Target Name="Deploy" DependsOnTargets="DeployWebsite;DeployWebService;DeployConsoleApp;DeployService;DeployDatabase;DeployAzure;AfterDeploy" />
+	<Target Name="Deploy" DependsOnTargets="DeployWebsite;DeployWebService;DeployConsoleApp;DeployService;DeployDatabase;DeployDataTierApplication;DeployAzure;AfterDeploy" />
 	<Target Name="Delete" DependsOnTargets="DeleteAzure;AfterDeploy" />
 
 	<!-- endregion Targets to use from outside -->	
