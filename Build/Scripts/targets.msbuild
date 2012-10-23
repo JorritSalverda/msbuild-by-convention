@@ -65,7 +65,7 @@
 		<ConvertToAbsolutePath Paths="$(BuildToolsDirectory)">
 			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteBuildToolsDirectory" />
 		</ConvertToAbsolutePath>
-		<MSBuild Projects="%(SolutionsToBuild.FullPath)" Targets="$(CompileTarget)" Properties="$(BuildParameters);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory)">
+		<MSBuild Projects="%(SolutionsToBuild.FullPath)" Targets="$(CompileTarget)" Properties="$(BuildParameters);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory)" BuildInParallel="true">
 			<Output TaskParameter="TargetOutputs" ItemName="BuildOutput" />
 		</MSBuild>
 
@@ -435,8 +435,8 @@
 		<ItemGroup>
 			<ProjectsToRelease Include="$(HtmlSourceDirectory)**\*.$(StaticHtmlProjectConventionName)\index.html">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
-				<FilesToCopyForReleasePattern>**\*</FilesToCopyForReleasePattern>
-			</ProjectsToRelease>
+				<FilesToCopyForReleasePattern>**\*</FilesToCopyForReleasePattern>				
+			</ProjectsToRelease>			
 		</ItemGroup>	
 	</Target>
 
@@ -472,8 +472,8 @@
 			<FilesToCopy Remove="@(FilesToCopy)" />
 			<FilesToCopy Include="$(ProjectSourceDirectory)$(FilesToCopyForReleasePattern)" Condition=" $(FilesToCopyForReleasePattern) != '' " />
 		</ItemGroup>
-		<Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(ProjectReleaseDirectory)" Condition=" @(FilesToCopy) != '' " />
-
+		<Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(ProjectReleaseDirectory)%(FilesToCopy.RecursiveDir)" Condition=" @(FilesToCopy) != '' " />	
+		
 		<!-- remove project files and web.config transform files from release directory -->
 		<ItemGroup>
 			<FilesToRemoveFromReleaseDirectory Remove="@(FilesToRemoveFromReleaseDirectory)" />
@@ -488,6 +488,7 @@
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*ReSharper*" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.sln" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory).svn\**\*" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.sublime-*" />			
 		</ItemGroup>
 		<Delete Files="@(FilesToRemoveFromReleaseDirectory)" />
 
@@ -687,7 +688,7 @@
 		<TransformXml Source="$(ProjectSourceDirectory)ServiceDefinition.csdef.original" Destination="$(ProjectSourceDirectory)ServiceDefinition.csdef" Transform="$(ProjectSourceDirectory)ServiceDefinition.%(AzureToRelease.Environment).csdef" Condition=" Exists('$(ProjectSourceDirectory)ServiceDefinition.%(AzureToRelease.Environment).csdef') " />
 
 		<!-- create the azure package, with transformed ServiceDefinition.csdef -->
-		<MsBuild Projects="%(AzureToRelease.FullPath)" Targets="Publish" Properties="$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);AbsoluteReleaseDirectory=$(AbsoluteReleaseDirectory)" />
+		<MsBuild Projects="%(AzureToRelease.FullPath)" Targets="Publish" Properties="$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);AbsoluteReleaseDirectory=$(AbsoluteReleaseDirectory)"  BuildInParallel="true" />
 
 		<!-- copy the azure package and ServiceConfiguration.cscfg to release directory -->
 		<ItemGroup>
@@ -808,6 +809,30 @@
 		<!-- todo deploy with msdeploy or robocopy -->
 	
 	</Target>
+	
+	<Target Name="DeployStaticHtml" DependsOnTargets="BeforeDeployStaticHtml;CoreDeployStaticHtml" />
+	<Target Name="BeforeDeployStaticHtml">
+		<ItemGroup>
+			<StaticHtmlToDeploy Include="$(ReleaseDirectory)\$(DeployEnvironment)\**\$(ProjectToDeploy)\index.html" />
+			<StaticHtmlToDeploy Include="$(BaseDirectory)**\$(ProjectToDeploy)\index.html" Condition=" !Exists('$(ReleaseDirectory)') " />
+		</ItemGroup>
+	</Target>	
+	<Target Name="CoreDeployStaticHtml" Inputs="%(StaticHtmlToDeploy.RootDir)%(StaticHtmlToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
+		<!-- call targets 'Deploy' with parameters '/p:DeployEnvironment=<environment to deploy to>;ProjectToDeploy=<project filename without extension>;DeployServer=<server - with msdeploy installed - to deploy to>;DeployTargetName=<iis sitename to update>;DeployUsername=<msdeploy user>;DeployPassword=<msdeploy password>' -->
+
+		<Error Condition = " '$(DeployEnvironment)' == '' And Exists('$(ReleaseDirectory)') " Text="Please set parameter DeployEnvironment to select the proper artifacts to deploy." />
+
+		<PropertyGroup>
+			<MSDeploySkipDirectoryParameter Condition=" $(DeploySkipDirectoryPattern) != '' ">-skip:objectName=dirPath,absolutePath=&quot;$(DeploySkipDirectoryPattern)&quot;</MSDeploySkipDirectoryParameter>
+			<MSDeploySkipFileParameter Condition=" $(DeploySkipFilePattern) != '' ">-skip:objectName=filePath,absolutePath=&quot;$(DeploySkipFilePattern)&quot;</MSDeploySkipFileParameter>
+			<ProjectReleaseDirectory>%(StaticHtmlToDeploy.RootDir)%(StaticHtmlToDeploy.Directory)</ProjectReleaseDirectory>
+		</PropertyGroup>
+				
+		<Exec Command="&quot;$(MsDeployPath)&quot; -verb:sync -source:contentpath=&quot;$(ProjectReleaseDirectory)&quot; -dest:contentpath=&quot;$(DeployTargetName)&quot;,wmsvc=$(DeployServer),username=$(DeployUsername),password=$(DeployPassword) -allowUntrusted $(MSDeploySkipDirectoryParameter) $(MSDeploySkipFileParameter)" />
+		
+		<HttpRequest Url="$(DeployWarmupUrl)" FailOnNon2xxResponse="true" Condition=" $(DeployWarmupUrl) != '' " />
+		
+	</Target>	
 
 	<Target Name="DeployDatabase" DependsOnTargets="BeforeDeployDatabase;CoreDeployDatabase" />
 	<Target Name="BeforeDeployDatabase">
@@ -885,6 +910,7 @@
 			<AllProjectsToDeploy Include="@(WebServicesToDeploy)" />
 			<AllProjectsToDeploy Include="@(ConsoleAppsToDeploy)" />
 			<AllProjectsToDeploy Include="@(ServicesToDeploy)" />
+			<AllProjectsToDeploy Include="@(StaticHtmlToDeploy)" />
 			<AllProjectsToDeploy Include="@(DatabasesToDeploy)" />
 			<AllProjectsToDeploy Include="@(DataTierApplicationsToDeploy)" />
 			<AllProjectsToDeploy Include="@(AzureToDeploy)" />
@@ -963,7 +989,7 @@
 	<Target Name="Release" DependsOnTargets="CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;AfterRelease" />
 	<Target Name="BuildAndRunUnitTestsAndRelease" DependsOnTargets="BeforeRelease;BuildAndRunUnitTests;Release" />
 
-	<Target Name="Deploy" DependsOnTargets="DeployWebsite;DeployWebService;DeployConsoleApp;DeployService;DeployDatabase;DeployDataTierApplication;DeployAzure;AfterDeploy" />
+	<Target Name="Deploy" DependsOnTargets="DeployWebsite;DeployWebService;DeployConsoleApp;DeployService;DeployStaticHtml;DeployDatabase;DeployDataTierApplication;DeployAzure;AfterDeploy" />
 	<Target Name="Delete" DependsOnTargets="DeleteAzure;AfterDeploy" />
 
 	<!-- endregion Targets to use from outside -->	
