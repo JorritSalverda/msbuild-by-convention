@@ -7,6 +7,33 @@
 	
 	<!-- beginregion Build targets -->
 	
+	<Target Name="PrepareGlobalProperties">
+
+		<ConvertToAbsolutePath Paths="$(SourceDirectory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteSourceDirectory" />
+		</ConvertToAbsolutePath>
+		<ConvertToAbsolutePath Paths="$(CloudExtensionsDir)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteCloudExtensionsDir" />
+		</ConvertToAbsolutePath>
+		<ConvertToAbsolutePath Paths="$(ExtensionTasksPath)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteExtensionTasksPath" />
+		</ConvertToAbsolutePath>
+		<ConvertToAbsolutePath Paths="$(SqlServerRedistPath)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteSqlServerRedistPath" />
+		</ConvertToAbsolutePath>		
+		<ConvertToAbsolutePath Paths="$(VSToolsPath)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteVSToolsPath" />
+		</ConvertToAbsolutePath>		
+		<ConvertToAbsolutePath Paths="$(BuildToolsDirectory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteBuildToolsDirectory" />
+		</ConvertToAbsolutePath>
+
+		<PropertyGroup>
+			<BuildParameters>$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);SqlServerRedistPath=$(AbsoluteSqlServerRedistPath);VSToolsPath=$(AbsoluteVSToolsPath);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory)</BuildParameters>
+		</PropertyGroup>
+			
+	</Target>
+	
 	<Target Name="CreateDirectories">
 		<MakeDir Directories="@(DirectoriesToCreate)" />
 	</Target>
@@ -34,24 +61,25 @@
 	    <FileUpdate Files="@(AssemblyInfoFiles)" Regex="\[\s*assembly\s*:\s*AssemblyFileVersion\s*\(\s*&quot;[\d\.\*]+&quot;\s*\)\s*\]" ReplacementText="[assembly: AssemblyFileVersion(&quot;$(BuildVersion)&quot;)]" Condition=" @(AssemblyInfoFiles) != '' " />
 	</Target>
 
-	<Target Name="ReplaceProjectImportStatements" Condition=" Exists('$(VisualStudioTeamdataDir)Microsoft.Data.Schema.SqlTasks.targets') ">
-		<!-- look for dbproj files and replace the import statement with one pointing to /build/tools/VisualStudio.v10.0.TeamData -->
+	<Target Name="ReplaceProjectImportStatements" Condition=" Exists('$(VisualStudioSqlServerDataToolsDir)Microsoft.Data.Tools.Schema.SqlTasks.targets') ">
+		<!-- look for sqlproj files and replace the import statement with one pointing to /build/tools/VisualStudio.v11.0.SSDT -->
 		<ItemGroup>
 			<DbProjectFiles Remove="@(DbProjectFiles)" />
-			<DbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj" />
+			<DbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).sqlproj" />
 		</ItemGroup>
-		<ConvertToAbsolutePath Paths="$(VisualStudioTeamdataDir)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteVisualStudioTeamdataDir" />
+		<ConvertToAbsolutePath Paths="$(VisualStudioSqlServerDataToolsDir)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteVisualStudioSqlServerDataToolsDir" />
 		</ConvertToAbsolutePath>
 		
 		<!-- keep backup of the project file -->
 		<Copy SourceFiles="@(DbProjectFiles)" DestinationFiles="%(DbProjectFiles.FullPath).original" /> 
 		
 		<Attrib ReadOnly="false" Files="@(DbProjectFiles)" />
-	    <FileUpdate Files="@(DbProjectFiles)" Regex="\$\(MSBuildExtensionsPath\)\\Microsoft\\VisualStudio\\v10\.0\\TeamData\\" ReplacementText="$(AbsoluteVisualStudioTeamdataDir)" Condition=" @(DbProjectFiles) != '' " />
+	    <FileUpdate Files="@(DbProjectFiles)" Regex="\$\(MSBuildExtensionsPath\)\\Microsoft\\VisualStudio\\v\$\(VisualStudioVersion\)\\SSDT\\" ReplacementText="$(AbsoluteVisualStudioSqlServerDataToolsDir)" Condition=" @(DbProjectFiles) != '' " />
+	
 	</Target>
 
-	<Target Name="Compile" DependsOnTargets="Clean;CopyDependencies;SetAssemblyFileVersion;ReplaceProjectImportStatements;BeforeCompile;CoreCompile;AfterCompile" />
+	<Target Name="Compile" DependsOnTargets="PrepareGlobalProperties;Clean;CopyDependencies;SetAssemblyFileVersion;ReplaceProjectImportStatements;BeforeCompile;CoreCompile;AfterCompile" />
 	<Target Name="BeforeCompile">
 		<!-- solutions that have a dependency order are specified in properties-repository-specific.msbuild; over here we add all solutions so it's not neccessary to list them all in properties-repository-specific.msbuild -->
 		<ItemGroup>
@@ -62,10 +90,7 @@
 		<Error Text="There are no solutions to compile!" Condition=" @(SolutionsToBuild) == '' " />
 
 		<!-- build solution -->
-		<ConvertToAbsolutePath Paths="$(BuildToolsDirectory)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteBuildToolsDirectory" />
-		</ConvertToAbsolutePath>
-		<MSBuild Projects="%(SolutionsToBuild.FullPath)" Targets="$(CompileTarget)" Properties="$(BuildParameters);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory)" BuildInParallel="true">
+		<MSBuild Projects="%(SolutionsToBuild.FullPath)" Targets="$(CompileTarget)" Properties="$(BuildParameters)" BuildInParallel="true">
 			<Output TaskParameter="TargetOutputs" ItemName="BuildOutput" />
 		</MSBuild>
 
@@ -94,7 +119,7 @@
 		<!-- restore db project file -->
 		<ItemGroup>
 			<_OriginalDbProjectFiles Remove="@(_OriginalDbProjectFiles)" />
-			<_OriginalDbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).dbproj.original" />
+			<_OriginalDbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).sqlproj.original" />
 			
 			<OriginalDbProjectFiles Remove="@(OriginalDbProjectFiles)" />
 			<OriginalDbProjectFiles Include="%(_OriginalDbProjectFiles.FullPath)">
@@ -446,7 +471,11 @@
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern>sql\$(Configuration)\*</FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
-		</ItemGroup>	
+			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).sqlproj">
+				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
+				<FilesToCopyForReleasePattern>sql\$(Configuration)\*</FilesToCopyForReleasePattern>
+			</ProjectsToRelease>
+		</ItemGroup>			
 	</Target>
 	
 	<Target Name="CoreRelease" Inputs="%(ProjectsToRelease.RootDir)%(ProjectsToRelease.Directory)%(ProjectsToRelease.Environment)" Outputs="AlwaysExecute">
@@ -613,7 +642,7 @@
 		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" ZipFileName="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\..\@(ProjectName)-$(BuildVersion).zip" ZipLevel="9" />
 		
 		<ItemGroup>
-			<DirectoriesToRemove Include="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
+			<ReleaseDirectoriesToRemove Include="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
 		</ItemGroup>
 			
 	</Target>
@@ -691,17 +720,8 @@
 		<RemoveDir Directories="@(DirectoriesToRemove)" />
 
 		<!-- convert all relative directory paths to absolute paths -->
-		<ConvertToAbsolutePath Paths="$(SourceDirectory)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteSourceDirectory" />
-		</ConvertToAbsolutePath>
 		<ConvertToAbsolutePath Paths="$(ReleaseDirectory)%(AzureToRelease.Environment)\">
 			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteReleaseDirectory" />
-		</ConvertToAbsolutePath>
-		<ConvertToAbsolutePath Paths="$(CloudExtensionsDir)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteCloudExtensionsDir" />
-		</ConvertToAbsolutePath>
-		<ConvertToAbsolutePath Paths="$(ExtensionTasksPath)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteExtensionTasksPath" />
 		</ConvertToAbsolutePath>
 
 		<!-- backup ServiceDefinition.csdef -->
@@ -711,7 +731,7 @@
 		<TransformXml Source="$(ProjectSourceDirectory)ServiceDefinition.csdef.original" Destination="$(ProjectSourceDirectory)ServiceDefinition.csdef" Transform="$(ProjectSourceDirectory)ServiceDefinition.%(AzureToRelease.Environment).csdef" Condition=" Exists('$(ProjectSourceDirectory)ServiceDefinition.%(AzureToRelease.Environment).csdef') " />
 
 		<!-- create the azure package, with transformed ServiceDefinition.csdef -->
-		<MsBuild Projects="%(AzureToRelease.FullPath)" Targets="Publish" Properties="$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);AbsoluteReleaseDirectory=$(AbsoluteReleaseDirectory)"  BuildInParallel="true" />
+		<MsBuild Projects="%(AzureToRelease.FullPath)" Targets="Publish" Properties="$(BuildParameters);AbsoluteReleaseDirectory=$(AbsoluteReleaseDirectory)" BuildInParallel="true" />
 
 		<!-- copy the azure package and ServiceConfiguration.cscfg to release directory -->
 		<ItemGroup>
@@ -748,7 +768,7 @@
 		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)" ZipFileName="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)\..\@(ProjectName)-$(BuildVersion).zip" ZipLevel="9" />
 		
 		<ItemGroup>
-			<DirectoriesToRemove Include="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)" />
+			<ReleaseDirectoriesToRemove Include="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)" />
 		</ItemGroup>
 
 	</Target>
@@ -784,9 +804,10 @@
 				
 		<!-- copy deployment scripts to each environment directory -->
 		<Copy SourceFiles="@(ItemsToCopyToReleaseItemGroup)" DestinationFiles="$(ReleaseDirectory)%(ItemsToCopyToReleaseItemGroup.Environment)\needed-for\correct-directory-depth\%(ItemsToCopyToReleaseItemGroup.Identity)" />
-
+		<RemoveDir Directories="$(ReleaseDirectory)%(ItemsToCopyToReleaseItemGroup.Environment)\needed-for" />		
+		
 		<!-- remove all release dirs, leaving just the zip files -->
-		<RemoveDir Directories="@(DirectoriesToRemove)" Condition=" @(DirectoriesToRemove) != '' " />		
+		<RemoveDir Directories="@(ReleaseDirectoriesToRemove)" Condition=" @(ReleaseDirectoriesToRemove) != '' " />		
 		
 	</Target>	
 
@@ -871,7 +892,7 @@
 		<ItemGroup>
 			<_DatabasesToDeploy Include="$(ReleaseDirectory)\$(SuitedForAllEnvironmentsDirectoryName)\**\*$(DatabaseProjectConventionName)*.zip" />
 			<_DatabasesToDeploy Include="$(BaseDirectory)**\*$(DatabaseProjectConventionName)*.zip" Condition=" !Exists('$(ReleaseDirectory)') " />						
-			<DatabasesToDeploy Include="%(_DatabasesToDeploy.FullPath)" Condition=" $([System.String]::Copy('%(_DatabasesToDeploy.Filename)').Contains($(ProjectToDeploy))) " />
+			<DatabasesToDeploy Include="%(_DatabasesToDeploy.FullPath)" Condition=" $([System.String]::Copy('%(_DatabasesToDeploy.Filename)').Contains($(ProjectToDeploy))) " />					
 		</ItemGroup>
 	</Target>
 	<Target Name="CoreDeployDatabase" Inputs="%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
@@ -884,8 +905,8 @@
 			<DacPacPath>%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)$(ProjectToDeploy)\$(ProjectToDeploy).dacpac</DacPacPath>
 		</PropertyGroup>
 
-		<!-- deploy data-tier application project -->
-		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="&quot;$(SqlPowershellPath)&quot; -f &quot;$(DacDeployScript)&quot; &quot;$(DacPacPath)&quot; &quot;$(DeployServer)&quot; &quot;$(DeployUsername)&quot; &quot;$(DeployPassword)&quot; &quot;$(DeployTargetName)&quot;" Condition=" Exists('$(DacPacPath)') " CustomErrorRegularExpression="^[Exception^]" />		
+		<!-- deploy data-tier application project (http://msdn.microsoft.com/en-us/library/hh550080(v=vs.103).aspx) -->
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="&quot;$(SqlServerRedistPath)\SqlPackage.exe&quot; /Action:Publish /SourceFile:&quot;$(DacPacPath)&quot; /TargetServerName:&quot;$(DeployServer)&quot; /TargetPassword:&quot;$(DeployPassword)&quot; /TargetUser:&quot;$(DeployUsername)&quot; /TargetDatabaseName:&quot;$(DeployTargetName)&quot; /p:AllowIncompatiblePlatform=True" Condition=" Exists('$(DacPacPath)') " />
 		
 	</Target>
 
@@ -913,7 +934,7 @@
 		
 		<PropertyGroup>
 			<PackageLocation>$(ProjectReleaseDirectory)</PackageLocation>
-			<PackageName>%(AzureToDeploy.Filename).cspkg</PackageName>
+			<PackageName>$(ProjectToDeploy).cspkg</PackageName>
 			<ServiceConfigName>ServiceConfiguration.cscfg</ServiceConfigName>
 		</PropertyGroup>
 

@@ -34,8 +34,7 @@
 		<FxCopPath>$(BuildToolsDirectory)FxCop.v10.0\</FxCopPath>
 		<MsDeployDirectory>$(BuildToolsDirectory)MsDeploy.v2\</MsDeployDirectory>
 		<MsDeployPath>$(MsDeployDirectory)msdeploy.exe</MsDeployPath>
-		<WebPublishingPath>$(BuildToolsDirectory)VS2010WebPublishing\Microsoft.Web.Publishing.Tasks.Dll</WebPublishingPath>
-		<CloudExtensionsDir>$(BuildToolsDirectory)Windows.Azure.Tools.v1.6\</CloudExtensionsDir>
+		<CloudExtensionsDir>$(BuildToolsDirectory)Windows.Azure.Tools.v1.7\</CloudExtensionsDir>
 		<PowershellPath>$(windir)\system32\WindowsPowerShell\v1.0\powershell.exe</PowershellPath>
 		<AzureDeployScript>AzureDeploy.ps1</AzureDeployScript>
 		<AzureDeleteScript>AzureDelete.ps1</AzureDeleteScript>
@@ -46,7 +45,10 @@
 		<JMeterToolPath>$(BuildToolsDirectory)apache-jmeter-2.6\bin\jmeter</JMeterToolPath>
 		<JpegtranPath>$(BuildToolsDirectory)Jpegtran\jpegtran.exe</JpegtranPath>
 		<OptiPngPath>$(BuildToolsDirectory)optipng-0.7.1-win32\optipng.exe</OptiPngPath>
-		<VisualStudioTeamdataDir>$(BuildToolsDirectory)VisualStudio.v10.0.TeamData\</VisualStudioTeamdataDir>
+		<VSToolsPath>$(BuildToolsDirectory)VisualStudio.v11.0\</VSToolsPath>
+		<VisualStudioSqlServerDataToolsDir>$(VSToolsPath)SSDT\</VisualStudioSqlServerDataToolsDir>
+		<WebPublishingPath>$(VSToolsPath)Web\Microsoft.Web.Publishing.Tasks.dll</WebPublishingPath>
+		<SqlServerRedistPath>$(BuildToolsDirectory)SqlServerRedistPath</SqlServerRedistPath>
 		
 		<!-- other properties -->
 		<BuildVersion Condition=" '$(BuildVersion)' == '' ">$(build_number)</BuildVersion>
@@ -116,8 +118,7 @@
 		
 		<ItemsToCopyToRelease Include="$(MSBuildCommunityTasksDirectory)**\*" />
 		<ItemsToCopyToRelease Include="$(MsDeployDirectory)*" />
-		<ItemsToCopyToRelease Include="$(SqlPowershellDirectory)*" />
-		<ItemsToCopyToRelease Include="$(DbDeployDirectory)*" />
+		<ItemsToCopyToRelease Include="$(SqlServerRedistPath)*" />
 		<ItemsToCopyToRelease Include="$(ScriptsDirectory)*" Exclude="$(ScriptsDirectory)*.bat;$(ScriptsDirectory)*.txt" />
 		
 	</ItemGroup>		
