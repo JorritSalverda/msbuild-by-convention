@@ -118,7 +118,7 @@
 		
 		<ItemsToCopyToRelease Include="$(MSBuildCommunityTasksDirectory)**\*" />
 		<ItemsToCopyToRelease Include="$(MsDeployDirectory)*" />
-		<ItemsToCopyToRelease Include="$(SqlServerRedistPath)*" />
+		<ItemsToCopyToRelease Include="$(SqlServerRedistPath)\**\*" />
 		<ItemsToCopyToRelease Include="$(ScriptsDirectory)*" Exclude="$(ScriptsDirectory)*.bat;$(ScriptsDirectory)*.txt" />
 		
 	</ItemGroup>		
