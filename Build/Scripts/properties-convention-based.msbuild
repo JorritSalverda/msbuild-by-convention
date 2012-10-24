@@ -34,8 +34,6 @@
 		<FxCopPath>$(BuildToolsDirectory)FxCop.v10.0\</FxCopPath>
 		<MsDeployDirectory>$(BuildToolsDirectory)MsDeploy.v2\</MsDeployDirectory>
 		<MsDeployPath>$(MsDeployDirectory)msdeploy.exe</MsDeployPath>
-		<DbDeployDirectory>$(BuildToolsDirectory)Vs2010DbCmd\</DbDeployDirectory>
-		<DbDeployPath>$(DbDeployDirectory)vsdbcmd.exe</DbDeployPath>
 		<WebPublishingPath>$(BuildToolsDirectory)VS2010WebPublishing\Microsoft.Web.Publishing.Tasks.Dll</WebPublishingPath>
 		<CloudExtensionsDir>$(BuildToolsDirectory)Windows.Azure.Tools.v1.6\</CloudExtensionsDir>
 		<PowershellPath>$(windir)\system32\WindowsPowerShell\v1.0\powershell.exe</PowershellPath>
