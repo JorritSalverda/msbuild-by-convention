@@ -492,6 +492,15 @@
 		<ConvertToAbsolutePath Paths="$(ReleaseTempDirectory)$(RelativeProjectReleaseDirectory)">
 			<Output TaskParameter="AbsolutePaths" PropertyName="ProjectReleaseDirectory" />
 		</ConvertToAbsolutePath>
+
+		<!-- remove obj directory from build directory, otherwise aspnetcompiler might fail due to multiple web.configs -->
+		<ItemGroup>
+			<DirectoriesToRemove Remove="@(DirectoriesToRemove)" />
+			<DirectoriesToRemove Include="%(ProjectsToRelease.RelativeDir)obj" />
+		</ItemGroup>
+
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(DirectoriesToRemove.FullPath)" Condition=" Exists('%(DirectoriesToRemove.FullPath)') " />
+		<RemoveDir Directories="@(DirectoriesToRemove)" />
 		
 		<!-- if it has a web.config let aspnetcompiler precompile the project  -->
 		<AspNetCompiler VirtualPath="/" PhysicalPath="$(ProjectSourceDirectory)" TargetPath="$(ProjectReleaseDirectory)" Updateable="$(CreateUpdateableAspxFilesInRelease)" Condition=" $(UseAspNetCompilerForRelease) == 'True' " />
@@ -639,12 +648,8 @@
             <Output TaskParameter="OutputItems" ItemName="ProjectName" />
         </MSBuild.ExtensionPack.Framework.MsBuildHelper>	
 			
-		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" ZipFileName="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\..\@(ProjectName)-$(BuildVersion).zip" ZipLevel="9" />
-		
-		<ItemGroup>
-			<ReleaseDirectoriesToRemove Include="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" />
-		</ItemGroup>
-			
+		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" ZipFileName="$(ReleaseDirectory)%(AllEnvironments.Identity)\@(ProjectName)-%(AllEnvironments.Identity)-$(BuildVersion).zip" ZipLevel="9" />
+					
 	</Target>
 
 	<Target Name="ReleaseAzure" DependsOnTargets="_BeforeReleaseAzure;BeforeReleaseAzure;CoreReleaseAzure" />
@@ -765,12 +770,8 @@
             <Output TaskParameter="OutputItems" ItemName="ProjectName" />
         </MSBuild.ExtensionPack.Framework.MsBuildHelper>	
 		
-		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)" ZipFileName="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)\..\@(ProjectName)-$(BuildVersion).zip" ZipLevel="9" />
+		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)" ZipFileName="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\@(ProjectName)-%(ReleaseFilesToCopy.Environment)-$(BuildVersion).zip" ZipLevel="9" />
 		
-		<ItemGroup>
-			<ReleaseDirectoriesToRemove Include="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)" />
-		</ItemGroup>
-
 	</Target>
 
 	<Target Name="AfterRelease">
@@ -783,14 +784,14 @@
 	
 		<!-- throw an error if there was nothing to release -->
 		<Error Text="There are no projects to be released!" Condition=" @(AllProjectsToRelease) == '' " />
-				
+	
 		<!-- remove duplicates from AllEnvironmentsToRelease -->
 		<Message Text="AllEnvironmentsToRelease: @(AllEnvironmentsToRelease)" />
 		
         <MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="RemoveDuplicateFiles" InputItems1="@(AllEnvironmentsToRelease)" Condition=" @(AllEnvironmentsToRelease) != '' ">
             <Output TaskParameter="OutputItems" ItemName="AllEnvironmentsToReleaseCleaned"/>
         </MSBuild.ExtensionPack.Framework.MsBuildHelper>
-
+		
 		<Message Text="AllEnvironmentsToReleaseCleaned: @(AllEnvironmentsToReleaseCleaned)" />
 		
 		<ItemGroup>
@@ -801,13 +802,16 @@
 		</ItemGroup>
 		
 		<Message Text="ItemsToCopyToReleaseItemGroup: @(ItemsToCopyToReleaseItemGroup)" />
+
+		<ItemGroup>
+			<ReleaseDirectoriesToRemove Include="$(ReleaseDirectory)%(ItemsToCopyToReleaseItemGroup.Environment)\**\*" Exclude="$(ReleaseDirectory)%(ItemsToCopyToReleaseItemGroup.Environment)\*.zip" />
+		</ItemGroup>
 				
-		<!-- copy deployment scripts to each environment directory -->
-		<Copy SourceFiles="@(ItemsToCopyToReleaseItemGroup)" DestinationFiles="$(ReleaseDirectory)%(ItemsToCopyToReleaseItemGroup.Environment)\needed-for\correct-directory-depth\%(ItemsToCopyToReleaseItemGroup.Identity)" />
-		<RemoveDir Directories="$(ReleaseDirectory)%(ItemsToCopyToReleaseItemGroup.Environment)\needed-for" />		
-		
 		<!-- remove all release dirs, leaving just the zip files -->
 		<RemoveDir Directories="@(ReleaseDirectoriesToRemove)" Condition=" @(ReleaseDirectoriesToRemove) != '' " />		
+		
+		<!-- copy deployment scripts to each environment directory -->
+		<Copy SourceFiles="@(ItemsToCopyToReleaseItemGroup)" DestinationFiles="$(ReleaseDirectory)%(ItemsToCopyToReleaseItemGroup.Environment)\needed-for\correct-directory-depth\%(ItemsToCopyToReleaseItemGroup.Identity)" />
 		
 	</Target>	
 
@@ -1025,7 +1029,7 @@
 
     <Target Name="Minify" DependsOnTargets="MinifyJavaScript;MinifyCss" />
 	<Target Name="PublishAssets" DependsOnTargets="PublishFlash" />
-	<Target Name="Release" DependsOnTargets="CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;AfterRelease" />
+	<Target Name="Release" DependsOnTargets="PrepareGlobalProperties;CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;AfterRelease" />
 	<Target Name="BuildAndRunUnitTestsAndRelease" DependsOnTargets="BeforeRelease;BuildAndRunUnitTests;Release" />
 
 	<Target Name="Deploy" DependsOnTargets="DeployWebsite;DeployWebService;DeployStaticHtml;CoreMsDeployDeploy;DeployConsoleApp;DeployService;DeployDatabase;DeployAzure;AfterDeploy" />
