@@ -59,7 +59,7 @@
 		<CompileTarget>Rebuild</CompileTarget>		
 		<BuildParameters Condition=" '$(Configuration)' == 'Debug' ">Configuration=$(Configuration);DebugSymbols=true;DebugType=full;RunCodeAnalysis=false;Optimize=false;PreBuildEvent=;PostBuildEvent=</BuildParameters>
 		<BuildParameters Condition=" '$(Configuration)' == 'Release' ">Configuration=$(Configuration);DebugSymbols=true;DebugType=pdbonly;RunCodeAnalysis=false;Optimize=true;PreBuildEvent=;PostBuildEvent=</BuildParameters>
-		<SuitedForAllEnvironmentsDirectoryName>_Global</SuitedForAllEnvironmentsDirectoryName>
+		<SuitedForAllEnvironmentsDirectoryName>AllEnvironments</SuitedForAllEnvironmentsDirectoryName>
 		<CreateUpdateableAspxFilesInRelease>false</CreateUpdateableAspxFilesInRelease>
 		<ContinueOnTestError Condition=" '$(ContinueOnTestError)' == '' ">False</ContinueOnTestError>
 		<OptimizeImages Condition=" '$(OptimizeImages)' == '' ">True</OptimizeImages>
