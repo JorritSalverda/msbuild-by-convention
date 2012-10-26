@@ -1,0 +1,5 @@
+
+07-08-2012  16:09            85.144 Microsoft.VisualStudio.WindowsAzure.Tasks.1.7.dll
+07-08-2012  16:09            14.984 Microsoft.VisualStudio.WindowsAzure.Tasks.Host.1.7.dll
+23-10-2012  11:27           156.958 Microsoft.WindowsAzure.targets
+07-08-2012  15:46           154.206 Microsoft.WindowsAzure.targets.original

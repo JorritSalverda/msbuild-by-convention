@@ -484,11 +484,25 @@
 			<UseAspNetCompilerForRelease>%(ProjectsToRelease.UseAspNetCompilerForRelease)</UseAspNetCompilerForRelease>
 			<FilesToCopyForReleasePattern>%(ProjectsToRelease.FilesToCopyForReleasePattern)</FilesToCopyForReleasePattern>
 		</PropertyGroup>
-				
-		<!-- resolve the temporary release directory -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(ProjectsToRelease.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
-            <Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
+
+		<ItemGroup>
+			<ProjectName Remove="@(ProjectName)" />
+		</ItemGroup>
+		
+		<!-- get project name -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="$(ProjectSourceDirectory)" String2="\">
+			<Output ItemName="ProjectSourceDirectoryParts" TaskParameter="Strings" />
         </MSBuild.ExtensionPack.Framework.TextString>
+		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(ProjectSourceDirectoryParts)">
+            <Output TaskParameter="OutputItems" ItemName="ProjectName" />
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>			
+
+		<PropertyGroup>
+			<ProjectName>@(ProjectName)</ProjectName>
+			<RelativeProjectReleaseDirectory>$(ProjectName)\</RelativeProjectReleaseDirectory>
+		</PropertyGroup>			
+		
+		<!-- resolve the temporary release directory -->
 		<ConvertToAbsolutePath Paths="$(ReleaseTempDirectory)$(RelativeProjectReleaseDirectory)">
 			<Output TaskParameter="AbsolutePaths" PropertyName="ProjectReleaseDirectory" />
 		</ConvertToAbsolutePath>
@@ -497,7 +511,7 @@
 		<ItemGroup>
 			<DirectoriesToRemove Remove="@(DirectoriesToRemove)" />
 			<DirectoriesToRemove Include="%(ProjectsToRelease.RelativeDir)obj" />
-		</ItemGroup>
+		</ItemGroup>		
 
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(DirectoriesToRemove.FullPath)" Condition=" Exists('%(DirectoriesToRemove.FullPath)') " />
 		<RemoveDir Directories="@(DirectoriesToRemove)" />
@@ -537,6 +551,7 @@
 			<AllStaticFiles Include="$(ProjectReleaseDirectory)$(JavascriptDirectoryConventionName)\**\*.js" />
 			<AllStaticFiles Include="$(ProjectReleaseDirectory)**\*.html" />
 		</ItemGroup>
+		
 		<Attrib ReadOnly="false" Files="@(AllStaticFiles)" />
 	    <FileUpdate Files="@(AllStaticFiles)" Regex="1\.0\.0\.0" ReplacementText="$(BuildVersion)" Condition=" @(AllStaticFiles) != '' " />
 	
@@ -614,7 +629,7 @@
 		<MakeDir Directories="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" Condition=" !Exists('$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)') " />
 		
 		<!-- transform *.config -->
-		<TransformXml Source="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).config" Destination="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)\%(ConfigsToTransform.Identity).config" Transform="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config" Condition=" Exists('$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config') " />
+		<TransformXml Source="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).config" Destination="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)%(ConfigsToTransform.Identity).config" Transform="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config" Condition=" Exists('$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config') " />
 
 		<!-- rename transformed app.config to *.dll.config -->
 		<PropertyGroup>
@@ -636,19 +651,17 @@
 
 		<!-- zip release directory and store zip with version number one directory above -->
 		<ItemGroup>
-			<ProjectName Remove="@(ProjectName)" />
 			<FilesToZip Remove="@(FilesToZip)" />
-			<FilesToZip Include="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)\**\*" /> 
+			<FilesToZip Include="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)**\*"> 
+				<Environment>%(AllEnvironments.Identity)</Environment>
+			</FilesToZip>
 		</ItemGroup>
-
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="$(ProjectSourceDirectory)" String2="\">
-			<Output ItemName="ProjectSourceDirectoryParts" TaskParameter="Strings" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(ProjectSourceDirectoryParts)">
-            <Output TaskParameter="OutputItems" ItemName="ProjectName" />
-        </MSBuild.ExtensionPack.Framework.MsBuildHelper>	
 			
-		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(RelativeProjectReleaseDirectory)" ZipFileName="$(ReleaseDirectory)%(AllEnvironments.Identity)\@(ProjectName)-%(AllEnvironments.Identity)-$(BuildVersion).zip" ZipLevel="9" />
+		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(FilesToZip.Environment)\$(RelativeProjectReleaseDirectory)" ZipFileName="$(ReleaseDirectory)%(FilesToZip.Environment)\@(ProjectName)-%(FilesToZip.Environment)-$(BuildVersion).zip" ZipLevel="9" />
+					
+		<ItemGroup>
+			<ReleaseDirectoriesToRemove Include="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(ProjectName)" />
+		</ItemGroup>
 					
 	</Target>
 
@@ -709,11 +722,24 @@
 			<ProjectSourceDirectory>%(AzureToRelease.RootDir)%(AzureToRelease.Directory)</ProjectSourceDirectory>
 		</PropertyGroup>
 
+		<ItemGroup>
+			<ProjectName Remove="@(ProjectName)" />
+		</ItemGroup>
+		
+		<!-- get project name -->
+		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="$(ProjectSourceDirectory)" String2="\">
+			<Output ItemName="ProjectSourceDirectoryParts" TaskParameter="Strings" />
+        </MSBuild.ExtensionPack.Framework.TextString>
+		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(ProjectSourceDirectoryParts)">
+            <Output TaskParameter="OutputItems" ItemName="ProjectName" />
+        </MSBuild.ExtensionPack.Framework.MsBuildHelper>			
+			
 		<!-- resolve the release directory -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(AzureToRelease.RelativeDir)" OldValue="$(SourceDirectory)" NewValue="">
-			<Output PropertyName="RelativeProjectReleaseDirectory" TaskParameter="NewString" />
-		</MSBuild.ExtensionPack.Framework.TextString>
-
+		<PropertyGroup>
+			<ProjectName>@(ProjectName)</ProjectName>
+			<RelativeProjectReleaseDirectory>$(ProjectName)\</RelativeProjectReleaseDirectory>
+		</PropertyGroup>
+		
 		<!-- remove bin and obj folders -->
 		<ItemGroup>
 			<DirectoriesToRemove Remove="@(DirectoriesToRemove)" />
@@ -760,17 +786,16 @@
 		<ItemGroup>
 			<ProjectName Remove="@(ProjectName)" />
 			<FilesToZip Remove="@(FilesToZip)" />
-			<FilesToZip Include="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)\**\*" /> 
+			<FilesToZip Include="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)\**\*"> 
+				<Environment>%(ReleaseFilesToCopy.Environment)</Environment>
+			</FilesToZip>
 		</ItemGroup>
+			
+		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(FilesToZip.Environment)\$(RelativeProjectReleaseDirectory)" ZipFileName="$(ReleaseDirectory)%(FilesToZip.Environment)\$(ProjectName)-%(FilesToZip.Environment)-$(BuildVersion).zip" ZipLevel="9" />
 		
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="$(ProjectSourceDirectory)" String2="\">
-			<Output ItemName="ProjectSourceDirectoryParts" TaskParameter="Strings" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(ProjectSourceDirectoryParts)">
-            <Output TaskParameter="OutputItems" ItemName="ProjectName" />
-        </MSBuild.ExtensionPack.Framework.MsBuildHelper>	
-		
-		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)" ZipFileName="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\@(ProjectName)-%(ReleaseFilesToCopy.Environment)-$(BuildVersion).zip" ZipLevel="9" />
+		<ItemGroup>
+			<ReleaseDirectoriesToRemove Include="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(ProjectName)" />
+		</ItemGroup>		
 		
 	</Target>
 
@@ -802,16 +827,15 @@
 		</ItemGroup>
 		
 		<Message Text="ItemsToCopyToReleaseItemGroup: @(ItemsToCopyToReleaseItemGroup)" />
-
-		<ItemGroup>
-			<ReleaseDirectoriesToRemove Include="$(ReleaseDirectory)%(ItemsToCopyToReleaseItemGroup.Environment)\**\*" Exclude="$(ReleaseDirectory)%(ItemsToCopyToReleaseItemGroup.Environment)\*.zip" />
-		</ItemGroup>
-				
-		<!-- remove all release dirs, leaving just the zip files -->
-		<RemoveDir Directories="@(ReleaseDirectoriesToRemove)" Condition=" @(ReleaseDirectoriesToRemove) != '' " />		
 		
 		<!-- copy deployment scripts to each environment directory -->
 		<Copy SourceFiles="@(ItemsToCopyToReleaseItemGroup)" DestinationFiles="$(ReleaseDirectory)%(ItemsToCopyToReleaseItemGroup.Environment)\needed-for\correct-directory-depth\%(ItemsToCopyToReleaseItemGroup.Identity)" />
+
+		<Message Text="ReleaseDirectoriesToRemove: @(ReleaseDirectoriesToRemove)" />
+		
+		<!-- remove all release dirs, leaving just the zip files -->
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(ReleaseDirectoriesToRemove.FullPath)" Condition=" Exists('%(ReleaseDirectoriesToRemove.FullPath)') " />
+		<RemoveDir Directories="@(ReleaseDirectoriesToRemove)" Condition=" @(ReleaseDirectoriesToRemove) != '' " />
 		
 	</Target>	
 

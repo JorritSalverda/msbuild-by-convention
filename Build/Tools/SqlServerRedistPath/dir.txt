@@ -1,0 +1,13 @@
+
+11-02-2012  11:11           169.048 DacUnpack.exe
+24-10-2012  18:17    <DIR>          en
+27-06-2012  00:15            89.576 Microsoft.Data.Tools.Prototype.Dac.Service3.dll
+19-03-2012  11:39         7.321.984 Microsoft.Data.Tools.Schema.Sql.dll
+27-06-2012  00:15           154.600 Microsoft.Data.Tools.Schema.Tasks.Sql.11.dll
+27-06-2012  00:15         1.201.640 Microsoft.Data.Tools.Schema.Utilities.Sql.11.dll
+19-03-2012  11:39           441.216 Microsoft.Data.Tools.Utilities.dll
+19-03-2012  11:39           166.256 Microsoft.SqlServer.Dac.dll
+08-03-2012  03:45                18 Redist_DACFramework.txt
+19-03-2012  11:39            91.480 SqlPackage.exe
+10-02-2012  17:57               803 SqlPackage.exe.config
+26-05-2012  00:13               143 SsdtCompatibility.xml
