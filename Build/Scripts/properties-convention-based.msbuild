@@ -17,6 +17,7 @@
 		<ReleaseTempDirectory>$(ReleaseDirectory)Temp\</ReleaseTempDirectory>
 		<TestResultsDirectory>$(BuildDirectory)TestResults\</TestResultsDirectory>
 		<CodeAnalysisDirectory>$(BuildDirectory)CodeAnalysis\</CodeAnalysisDirectory>		
+		<CodeCoverageDirectory>$(BuildDirectory)CodeCoverage\</CodeCoverageDirectory>		
 		<CSharpSourceDirectory>$(BaseDirectory)Source\CSharp\</CSharpSourceDirectory>
 		<HtmlSourceDirectory>$(BaseDirectory)Source\Html\</HtmlSourceDirectory>
 		<FlashSourceDirectory>$(BaseDirectory)Source\Flash\</FlashSourceDirectory>
@@ -49,6 +50,9 @@
 		<VisualStudioSqlServerDataToolsDir>$(VSToolsPath)SSDT\</VisualStudioSqlServerDataToolsDir>
 		<WebPublishingPath>$(VSToolsPath)Web\Microsoft.Web.Publishing.Tasks.dll</WebPublishingPath>
 		<SqlServerRedistPath>$(BuildToolsDirectory)SqlServerRedistPath</SqlServerRedistPath>
+		<OpenCoverPath>$(BuildToolsDirectory)OpenCover.4.0.804\</OpenCoverPath>
+		<OpenCoverMSBuildTasksPath>$(OpenCoverPath)MSBuild\</OpenCoverMSBuildTasksPath>
+		<ReportGeneratorPath>$(BuildToolsDirectory)ReportGenerator.v1.6.1.0\</ReportGeneratorPath>		
 		
 		<!-- other properties -->
 		<BuildVersion Condition=" '$(BuildVersion)' == '' ">$(build_number)</BuildVersion>
@@ -63,6 +67,7 @@
 		<CreateUpdateableAspxFilesInRelease>false</CreateUpdateableAspxFilesInRelease>
 		<ContinueOnTestError Condition=" '$(ContinueOnTestError)' == '' ">False</ContinueOnTestError>
 		<OptimizeImages Condition=" '$(OptimizeImages)' == '' ">True</OptimizeImages>
+		<IncludeCoverage Condition=" '$(IncludeCoverage)' == '' ">False</IncludeCoverage>
 		
 		<!-- deploy properties -->
 		<ProjectToDeploy></ProjectToDeploy>	
@@ -111,6 +116,7 @@
 		<DirectoriesToCreate Include="$(ReleaseDirectory)" />
 		<DirectoriesToCreate Include="$(TestResultsDirectory)" />
 		<DirectoriesToCreate Include="$(CodeAnalysisDirectory)" />
+		<DirectoriesToCreate Include="$(CodeCoverageDirectory)" />
 		
 		<!-- limit the amount of environments the release is created for: /p:ConfigurationsToRelease="UAT;PROD" -->
 		<ConfigurationsToRelease Include="$(ConfigurationsToRelease)" />
@@ -146,5 +152,8 @@
 	
 	<!-- task for config transforms -->
 	<UsingTask TaskName="TransformXml" AssemblyFile="$(WebPublishingPath)" />
+	
+	<!-- task for code coverage -->
+	<UsingTask AssemblyFile="$(OpenCoverMSBuildTasksPath)OpenCover.MSBuild.dll" TaskName="OpenCover.MSBuild.OpenCover" />
 	
 </Project>

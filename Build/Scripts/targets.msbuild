@@ -108,7 +108,7 @@
 
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(DirectoriesToRemove.FullPath)" Condition=" Exists('%(DirectoriesToRemove.FullPath)') " />
 		<RemoveDir Directories="@(DirectoriesToRemove)" />
-
+		
 		<AspNetCompiler VirtualPath="/" PhysicalPath="%(ProjectsToBuild.RelativeDir)" Condition=" Exists('%(ProjectsToBuild.RelativeDir)Web.config') " />
 
 		<!-- copy output assemblies to build/bin directory -->
@@ -136,18 +136,29 @@
 
 	<!-- endregion Build targets -->
 
-	<!-- beginregion RunUnitTests targets -->
+	<!-- beginregion Tests targets -->
 	
-	<Target Name="RunUnitTests" DependsOnTargets="CreateDirectories;CoreRunUnitTests" />
-	<Target Name="CoreRunUnitTests">
+	<Target Name="RunUnitTests" DependsOnTargets="CreateDirectories;BeforeRunUnitTests;CoreRunTests" />
+	<Target Name="BeforeRunUnitTests">
 		<ItemGroup>
-			<UnitTestProjects Remove="@(UnitTestProjects)" />
-			<UnitTestProjects Include="$(CSharpSourceDirectory)**\*.$(UnitTestsProjectConventionName).csproj" />
-		</ItemGroup>
+			<TestProjects Include="$(CSharpSourceDirectory)**\*.$(UnitTestsProjectConventionName).csproj" />
+		</ItemGroup>	
+	</Target>
+	
+	<Target Name="RunIntegrationTests" DependsOnTargets="CreateDirectories;BeforeRunIntegrationTests;CoreRunTests" />
+	<Target Name="BeforeRunIntegrationTests">
+		<ItemGroup>
+			<TestProjects Include="$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />
+		</ItemGroup>	
+	</Target>	
+	
+	<Target Name="CoreRunTests">
+	
+		<Delete Files="$(TestResultsDirectory)*" />
 
 		<ItemGroup>
 			<TestAssemblies Remove="@(TestAssemblies)" />
-			<TestAssemblies Include="%(UnitTestProjects.RelativeDir)bin\$(Configuration)\%(UnitTestProjects.Filename).dll" />
+			<TestAssemblies Include="%(TestProjects.RelativeDir)bin\$(Configuration)\%(TestProjects.Filename).dll" />
 		</ItemGroup>		
 
 		<!-- filter out test assemblies if nunit.framework.dll is not referenced -->
@@ -156,8 +167,35 @@
 			<NunitTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)nunit.framework.dll') " />
 		</ItemGroup>
 
-		<NUnit Assemblies="@(NunitTestAssemblies)" ToolPath="$(NUnitToolPath)" OutputXmlFile="$(TestResultsDirectory)$(UnitTestsProjectConventionName).Results.xml" DisableShadowCopy="true" Condition=" @(NunitTestAssemblies) != '' " ContinueOnError="$(ContinueOnTestError)" />
+		<NUnit Assemblies="@(NunitTestAssemblies)" ToolPath="$(NUnitToolPath)" OutputXmlFile="$(TestResultsDirectory)NUnit.Results.%(NunitTestAssemblies.Filename).xml" DisableShadowCopy="true" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'False' " ContinueOnError="$(ContinueOnTestError)" />
+	
+		<ItemGroup>
+			<AssembliesToReportCoverage Remove="@(AssembliesToReportCoverage)" />
+			<AssembliesToReportCoverage Include="$(CSharpSourceDirectory)**\*.csproj" Exclude="$(CSharpSourceDirectory)**\*.$(UnitTestsProjectConventionName).csproj;$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />
+		</ItemGroup>
+		
+		<PropertyGroup>
+			<OpenCoverFilter>+[@(AssembliesToReportCoverage -> '%(Filename)', ']*;+[')]*</OpenCoverFilter>
+		</PropertyGroup>
+		
+		<!-- https://github.com/sawilde/opencover/wiki/Usage -->
+		<OpenCover
+			ToolPath="$(OpenCoverPath)"
+			Register="True"
+			Target="$(NUnitToolPath)nunit-console.exe"
+			TargetArgs="@(NunitTestAssemblies -> '%(FullPath)', ' ') /result=$(TestResultsDirectory)NUnit.Results.%(NunitTestAssemblies.Filename).xml /noshadow"
+			Output="$(CodeCoverageDirectory)NUnit.Coverage.%(NunitTestAssemblies.Filename).xml"			
+			Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'True'"
+			Filter="$(OpenCoverFilter)"
+			/>
+		
+		<!-- http://reportgenerator.codeplex.com/ -->
+		<Exec Command="&quot;$(ReportGeneratorPath)ReportGenerator.exe&quot; &quot;-reports:$(CodeCoverageDirectory)\*.xml&quot; &quot;-targetdir:$(CodeCoverageDirectory)\&quot; -reporttypes:Html;HtmlSummary" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'True'" />
 
+		<!--
+		<Delete Files="$(CodeCoverageDirectory)NUnit.Coverage.%(NunitTestAssemblies.Filename).xml" />		
+		-->
+		
 		<!-- filter out test assemblies if Machine.Specifications.dll is not referenced -->
 		<ItemGroup>
 			<MSpecTestAssemblies Remove="@(MSpecTestAssemblies)" />
@@ -172,46 +210,12 @@
 			<MSTestTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll') " />
 		</ItemGroup>
 
-		<Delete Files="$(TestResultsDirectory)MsTest.%(MSTestTestAssemblies.Filename).Results.xml" />		
 		<Exec Command="$(MSTestRunnerPath) /testcontainer:%(MSTestTestAssemblies.Identity) /resultsfile:$(TestResultsDirectory)MsTest.%(MSTestTestAssemblies.Filename).Results.xml /nologo" Condition=" @(MSTestTestAssemblies) != '' " IgnoreExitCode="$(ContinueOnTestError)" />
 		
 	</Target>
 
-	<!-- endregion RunUnitTests targets -->
-	
-	<!-- beginregion RunIntegrationTests targets -->
-	
-	<Target Name="RunIntegrationTests" DependsOnTargets="CreateDirectories;CoreRunIntegrationTests" />
-	<Target Name="CoreRunIntegrationTests">
-		<ItemGroup>
-			<IntegrationTestProjects Remove="@(IntegrationTestProjects)" />
-			<IntegrationTestProjects Include="$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />
-		</ItemGroup>
-
-		<ItemGroup>
-			<TestAssemblies Remove="@(TestAssemblies)" />
-			<TestAssemblies Include="%(IntegrationTestProjects.RelativeDir)bin\$(Configuration)\%(IntegrationTestProjects.Filename).dll" />
-		</ItemGroup>
-
-		<!-- filter out test assemblies if nunit.framework.dll is not referenced -->
-		<ItemGroup>
-			<NunitTestAssemblies Remove="@(NunitTestAssemblies)" />
-			<NunitTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)nunit.framework.dll') " />
-		</ItemGroup>
-
-		<NUnit Assemblies="@(NunitTestAssemblies)" ToolPath="$(NUnitToolPath)" OutputXmlFile="$(TestResultsDirectory)$(IntegrationTestsProjectConventionName).Results.xml" DisableShadowCopy="true" Condition=" @(NunitTestAssemblies) != '' " ContinueOnError="$(ContinueOnTestError)" />
-
-		<!-- filter out test assemblies if Machine.Specifications.dll is not referenced -->
-		<ItemGroup>
-			<MSpecTestAssemblies Remove="@(MSpecTestAssemblies)" />
-			<MSpecTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)Machine.Specifications.dll') " />
-		</ItemGroup>
-
-		<Exec Command="$(MSpecRunnerPath) --teamcity --html $(TestResultsDirectory) @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " IgnoreExitCode="$(ContinueOnTestError)" />
-	</Target>
-
-	<!-- endregion RunIntegrationTests targets -->
-	
+	<!-- endregion Tests targets -->
+			
 	<!-- beginregion RunJMeterTests targets -->
 	
 	<Target Name="RunJMeterTests" DependsOnTargets="BeforeRunJMeterTests;CoreRunJMeterTests" />

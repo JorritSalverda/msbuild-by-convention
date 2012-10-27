@@ -45,6 +45,7 @@ Build/IntegrationTestResults/
 Build/Releases/
 Build/TestResults/
 Build/CodeAnalysis/
+Build/CodeCoverage/
 *.suo
 *.dbmdl
 *GeneratedSetVersionFile*
