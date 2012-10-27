@@ -155,6 +155,7 @@
 	<Target Name="CoreRunTests">
 	
 		<Delete Files="$(TestResultsDirectory)*" />
+		<Delete Files="$(CodeCoverageDirectory)*" />
 
 		<ItemGroup>
 			<TestAssemblies Remove="@(TestAssemblies)" />
