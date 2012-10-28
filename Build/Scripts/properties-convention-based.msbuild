@@ -35,7 +35,7 @@
 		<FxCopPath>$(BuildToolsDirectory)FxCop.v10.0\</FxCopPath>
 		<MsDeployDirectory>$(BuildToolsDirectory)MsDeploy.v2\</MsDeployDirectory>
 		<MsDeployPath>$(MsDeployDirectory)msdeploy.exe</MsDeployPath>
-		<CloudExtensionsDir>$(BuildToolsDirectory)Windows.Azure.Tools.v1.7\</CloudExtensionsDir>
+		<CloudExtensionsDir>$(BuildToolsDirectory)Windows.Azure.Tools.v1.8\</CloudExtensionsDir>
 		<PowershellPath>$(windir)\system32\WindowsPowerShell\v1.0\powershell.exe</PowershellPath>
 		<AzureDeployScript>AzureDeploy.ps1</AzureDeployScript>
 		<AzureDeleteScript>AzureDelete.ps1</AzureDeleteScript>
