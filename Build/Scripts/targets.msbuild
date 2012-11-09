@@ -176,22 +176,14 @@
 		</ItemGroup>
 		
 		<PropertyGroup>
-			<OpenCoverFilter>+[@(AssembliesToReportCoverage -> '%(Filename)', ']*;+[')]*</OpenCoverFilter>
+			<OpenCoverFilter>+[@(AssembliesToReportCoverage -> '%(Filename)', ']* +[')]*</OpenCoverFilter>
 		</PropertyGroup>
 		
 		<!-- https://github.com/sawilde/opencover/wiki/Usage -->
-		<OpenCover
-			ToolPath="$(OpenCoverPath)"
-			Register="True"
-			Target="$(NUnitToolPath)nunit-console.exe"
-			TargetArgs="@(NunitTestAssemblies -> '%(FullPath)', ' ') /result=$(TestResultsDirectory)NUnit.Results.%(NunitTestAssemblies.Filename).xml /noshadow"
-			Output="$(CodeCoverageDirectory)NUnit.Coverage.%(NunitTestAssemblies.Filename).xml"			
-			Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'True'"
-			Filter="$(OpenCoverFilter)"
-			/>
+		<Exec Command="$(OpenCoverPath)OpenCover.Console.exe -register:user -returntargetcode -target:$(NUnitToolPath)nunit-console.exe -targetargs:&quot;@(NunitTestAssemblies -> '%(FullPath)', ' ') /result=$(TestResultsDirectory)NUnit.Results.%(NunitTestAssemblies.Filename).xml /noshadow&quot; -filter:&quot;$(OpenCoverFilter)&quot; -output:$(CodeCoverageDirectory)NUnit.Coverage.%(NunitTestAssemblies.Filename).xml" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'True' " ContinueOnError="$(ContinueOnTestError)" />
 		
 		<!-- http://reportgenerator.codeplex.com/ -->
-		<Exec Command="&quot;$(ReportGeneratorPath)ReportGenerator.exe&quot; &quot;-reports:$(CodeCoverageDirectory)\*.xml&quot; &quot;-targetdir:$(CodeCoverageDirectory)\&quot; -reporttypes:Html;HtmlSummary" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'True'" />
+		<Exec Command="&quot;$(ReportGeneratorPath)ReportGenerator.exe&quot; &quot;-reports:$(CodeCoverageDirectory)\*.xml&quot; &quot;-targetdir:$(CodeCoverageDirectory)\&quot; -reporttypes:Html;HtmlSummary" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'True' " />
 
 		<!--
 		<Delete Files="$(CodeCoverageDirectory)NUnit.Coverage.%(NunitTestAssemblies.Filename).xml" />		
