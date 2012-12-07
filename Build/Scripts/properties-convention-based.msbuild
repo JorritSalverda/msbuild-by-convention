@@ -53,6 +53,7 @@
 		<OpenCoverPath>$(BuildToolsDirectory)OpenCover.4.0.804\</OpenCoverPath>
 		<OpenCoverMSBuildTasksPath>$(OpenCoverPath)MSBuild\</OpenCoverMSBuildTasksPath>
 		<ReportGeneratorPath>$(BuildToolsDirectory)ReportGenerator.v1.6.1.0\</ReportGeneratorPath>		
+		<BuildVersionFilePath>$(ScriptsDirectory)buildversion.txt</BuildVersionFilePath>
 		
 		<!-- other properties -->
 		<BuildVersion Condition=" '$(BuildVersion)' == '' ">$(build_number)</BuildVersion>

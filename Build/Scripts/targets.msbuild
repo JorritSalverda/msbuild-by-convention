@@ -78,13 +78,16 @@
 	    <FileUpdate Files="@(DbProjectFiles)" Regex="\$\(MSBuildExtensionsPath\)\\Microsoft\\VisualStudio\\v\$\(VisualStudioVersion\)\\SSDT\\" ReplacementText="$(AbsoluteVisualStudioSqlServerDataToolsDir)" Condition=" @(DbProjectFiles) != '' " />
 	
 	</Target>
-
+	
 	<Target Name="Compile" DependsOnTargets="PrepareGlobalProperties;Clean;CopyDependencies;SetAssemblyFileVersion;ReplaceProjectImportStatements;BeforeCompile;CoreCompile;AfterCompile" />
 	<Target Name="BeforeCompile">
 		<!-- solutions that have a dependency order are specified in properties-repository-specific.msbuild; over here we add all solutions so it's not neccessary to list them all in properties-repository-specific.msbuild -->
 		<ItemGroup>
 			<SolutionsToBuild Include="$(CSharpSourceDirectory)**\*.sln" />
 		</ItemGroup>
+		
+		<WriteLinesToFile File="$(BuildVersionFilePath)" Lines="$(BuildVersion)" Overwrite="true"/>
+		
 	</Target>
     <Target Name="CoreCompile" Inputs="%(SolutionsToBuild.RootDir)%(SolutionsToBuild.Directory)" Outputs="NonExistingOutputToTriggerTargetForEverySolution">
 		<Error Text="There are no solutions to compile!" Condition=" @(SolutionsToBuild) == '' " />
@@ -133,6 +136,23 @@
 		<Delete Files="@(OriginalDbProjectFiles)" />
 	
 	</Target>	
+	
+	<Target Name="CompileIfLastBuiltVersionIsDifferent">
+		
+		<PropertyGroup>
+			<BuildVersionFromFile></BuildVersionFromFile>
+		</PropertyGroup>
+		
+		<ReadLinesFromFile File="$(BuildVersionFilePath)" Condition=" Exists('$(BuildVersionFilePath)') " >
+            <Output TaskParameter="Lines" ItemName="BuildVersionFromFile"/>
+        </ReadLinesFromFile>
+		
+		<Message Text="Same version, no need to compile" Importance="High" Condition=" @(BuildVersionFromFile) == $(BuildVersion) " />
+		<Message Text="Other version, compile first" Importance="High" Condition=" @(BuildVersionFromFile) != $(BuildVersion) " />
+		
+		<CallTarget Targets="Compile" Condition=" @(BuildVersionFromFile) != $(BuildVersion) " />
+		
+	</Target>
 
 	<!-- endregion Build targets -->
 
