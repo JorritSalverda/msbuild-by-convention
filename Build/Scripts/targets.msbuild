@@ -86,8 +86,8 @@
 			<SolutionsToBuild Include="$(CSharpSourceDirectory)**\*.sln" />
 		</ItemGroup>
 		
-		<WriteLinesToFile File="$(BuildVersionFilePath)" Lines="$(BuildVersion)" Overwrite="true"/>
-		
+		<Delete Files="$(BuildVersionFilePath)" Condition=" Exists('$(BuildVersionFilePath)') " />
+				
 	</Target>
     <Target Name="CoreCompile" Inputs="%(SolutionsToBuild.RootDir)%(SolutionsToBuild.Directory)" Outputs="NonExistingOutputToTriggerTargetForEverySolution">
 		<Error Text="There are no solutions to compile!" Condition=" @(SolutionsToBuild) == '' " />
@@ -134,10 +134,13 @@
 
 		<Copy SourceFiles="@(OriginalDbProjectFiles)" DestinationFiles="%(OriginalDbProjectFiles.DestinationFile)" />
 		<Delete Files="@(OriginalDbProjectFiles)" />
+
+		<!-- indicates which version has been built last in order to do a compile check -->
+		<WriteLinesToFile File="$(BuildVersionFilePath)" Lines="$(BuildVersion)" Overwrite="true" />
 	
 	</Target>	
 	
-	<Target Name="CompileIfLastBuiltVersionIsDifferent">
+	<Target Name="CompileCheck">
 		
 		<PropertyGroup>
 			<BuildVersionFromFile></BuildVersionFromFile>
@@ -158,14 +161,14 @@
 
 	<!-- beginregion Tests targets -->
 	
-	<Target Name="RunUnitTests" DependsOnTargets="CreateDirectories;BeforeRunUnitTests;CoreRunTests" />
+	<Target Name="RunUnitTests" DependsOnTargets="CreateDirectories;CompileCheck;BeforeRunUnitTests;CoreRunTests" />
 	<Target Name="BeforeRunUnitTests">
 		<ItemGroup>
 			<TestProjects Include="$(CSharpSourceDirectory)**\*.$(UnitTestsProjectConventionName).csproj" />
 		</ItemGroup>	
 	</Target>
 	
-	<Target Name="RunIntegrationTests" DependsOnTargets="CreateDirectories;BeforeRunIntegrationTests;CoreRunTests" />
+	<Target Name="RunIntegrationTests" DependsOnTargets="CreateDirectories;CompileCheck;BeforeRunIntegrationTests;CoreRunTests" />
 	<Target Name="BeforeRunIntegrationTests">
 		<ItemGroup>
 			<TestProjects Include="$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />
@@ -1070,7 +1073,7 @@
 
     <Target Name="Minify" DependsOnTargets="MinifyJavaScript;MinifyCss" />
 	<Target Name="PublishAssets" DependsOnTargets="PublishFlash" />
-	<Target Name="Release" DependsOnTargets="PrepareGlobalProperties;CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;AfterRelease" />
+	<Target Name="Release" DependsOnTargets="PrepareGlobalProperties;CreateDirectories;CompileCheck;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;AfterRelease" />
 	<Target Name="BuildAndRunUnitTestsAndRelease" DependsOnTargets="BeforeRelease;BuildAndRunUnitTests;Release" />
 
 	<Target Name="Deploy" DependsOnTargets="DeployWebsite;DeployWebService;DeployStaticHtml;CoreMsDeployDeploy;DeployConsoleApp;DeployService;DeployDatabase;DeployAzure;AfterDeploy" />
