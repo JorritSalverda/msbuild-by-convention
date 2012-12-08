@@ -7,47 +7,44 @@ This content is released under the https://github.com/JorritSalverda/msbuild-by-
 ### Get started:
   
 * clone repository
-* download at least the following tools and save the files mentioned in the corresponding dir.txt files to the /Build/Tools/ subdirectories
+* download at least the following tools and save the files mentioned in the corresponding dir.txt files to the \Build\Tools\ subdirectories
   
 * compile:
-	* optipng-0.7.1-win32
-	* Jpegtran
-	* Yahoo.Yui.Compressor.v1.6.0.2
-	* Windows.Azure.Tools.v1.6
-  
-* run unit / integration tests
-	* NUnit-2.6.0.12051
-	* Machine.Specifications.0.5.3.0
-  
-* deploy visual studio database project
-	* Vs2010DbCmd
-  
-* deploy data-tier application	
-	* SqlPowershell-10.50.1600.1
+	* Windows.Azure.Tools.v1.8 (copy content of C:\Program Files (x86)\MSBuild\Microsoft\VisualStudio\v11.0\Windows Azure Tools\1.8 int \Build\Tools\Windows.Azure.Tools.v1.8)
+	* VisualStudio.v11.0 (copy content of C:\Program Files (x86)\MSBuild\Microsoft\VisualStudio\v11.0 into \Build\Tools\VisualStudio.v11.0)
+	
+* run unit / integration tests:
+	* MSTest.v11.0.50727.1 (copy C:\Program Files (x86)\Microsoft Visual Studio 11.0\Common7\IDE\MSTest.exe to \Build\Tools\MSTest.v11.0.50727.1)
+    
+* deploy visual studio database project / data-tier application:
+	* SqlServerRedistPath (copy content of C:\Program Files (x86)\Microsoft SQL Server\110\DAC\bin into \Build\Tools\SqlServerRedistPath)
+	
+* deploy asp.net website:
+	* MsDeploy.v2
   
 ### How to use:
   
-All commands should be run from Build/Scripts/  
+All commands should be run from Build/Scripts/ using a BuildVersion parameter in the form of x.x.x.x (1.0.0.87 for example)
   
 * compile
-	* msbuild.exe targets.msbuild /t:Build /p:BuildVersion=1.0.0.{buildNumber}
+	* msbuild.exe targets.msbuild /t:Build /p:BuildVersion={x.x.x.x}
   
-* run unit tests (depends on compile)
-	* msbuild.exe targets.msbuild /t:RunUnitTests /p:BuildVersion=1.0.0.{buildNumber}
+* run unit tests (depends on compile, but does a compile check itself)
+	* msbuild.exe targets.msbuild /t:RunUnitTests /p:BuildVersion={x.x.x.x}
   
-* create release (depends on compile)
-	* msbuild.exe targets.msbuild /t:Release /p:BuildVersion=1.0.0.{buildNumber}
+* create release (depends on compile, but does a compile check itself)
+	* msbuild.exe targets.msbuild /t:Release /p:BuildVersion={x.x.x.x}
 	* (save Build/Releases/** as release artefact)
   
-* run integration tests (depends on compile)
-	* msbuild.exe targets.msbuild /t:RunIntegrationTests /p:BuildVersion=1.0.0.{buildNumber}
+* run integration tests (depends on compile, but does a compile check itself)
+	* msbuild.exe targets.msbuild /t:RunIntegrationTests /p:BuildVersion={x.x.x.x}
   
-* deploy visual studio database project or data-tier application (depends on compile + create release)
-	* msbuild.exe targets.msbuild /t:Deploy /p:BuildVersion=1.0.0.{buildNumber} /p:DeployEnvironment="{INT|UAT|ACC|PROD}" /p:ProjectToDeploy='{database project name}' /p:DeployServer='{remote server}' /p:DeployTargetName='{remote database name}' /p:DeployUsername='{remote admin username}' /p:DeployPassword='{remote admin password}'
+* deploy visual studio database project or data-tier application (depends on release artifacts)
+	* msbuild.exe targets.msbuild /t:Deploy /p:BuildVersion={x.x.x.x} /p:DeployEnvironment="{INT|UAT|ACC|PROD}" /p:ProjectToDeploy='{database project name}' /p:DeployServer='{remote server}' /p:DeployTargetName='{remote database name}' /p:DeployUsername='{remote admin username}' /p:DeployPassword='{remote admin password}'
   
-* deploy azure role (depends on compile + create release)
+* deploy azure role (depends on release artifacts)
 	* create certificate, upload to azure as management certificate and store in /Build/Scripts as AzureManagementCertificate.cer and AzureManagementCertificate.pfx
-	* msbuild.exe targets.msbuild /t:Deploy /p:BuildVersion=1.0.0.{buildNumber} /p:DeployEnvironment="{INT|UAT|ACC|PROD}" /p:ProjectToDeploy="{azure project name}" /p:AzureSubscriptionID="{azure subscription id}" /p:AzureCertificatePassword="{management certificate password}" /p:AzureHostedServiceName="{hosted service name}" /p:AzureStorageAccountName="{azure storage account}" /p:AzureStorageAccountKey="{secret key for azure storage account}" /p:AzureSwapToProductionAfterDeploy="{False|True}" /p:AzureRemoveStagingAfterSwap="{False|True}"
+	* msbuild.exe targets.msbuild /t:Deploy /p:BuildVersion={x.x.x.x} /p:DeployEnvironment="{INT|UAT|ACC|PROD}" /p:ProjectToDeploy="{azure project name}" /p:AzureSubscriptionID="{azure subscription id}" /p:AzureCertificatePassword="{management certificate password}" /p:AzureHostedServiceName="{hosted service name}" /p:AzureStorageAccountName="{azure storage account}" /p:AzureStorageAccountKey="{secret key for azure storage account}" /p:AzureSwapToProductionAfterDeploy="{False|True}" /p:AzureRemoveStagingAfterSwap="{False|True}"
 	
 ## License
 
