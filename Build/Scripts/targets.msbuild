@@ -161,14 +161,14 @@
 
 	<!-- beginregion Tests targets -->
 	
-	<Target Name="RunUnitTests" DependsOnTargets="CreateDirectories;CompileCheck;BeforeRunUnitTests;CoreRunTests" />
+	<Target Name="RunUnitTests" DependsOnTargets="CompileCheck;CreateDirectories;BeforeRunUnitTests;CoreRunTests" />
 	<Target Name="BeforeRunUnitTests">
 		<ItemGroup>
 			<TestProjects Include="$(CSharpSourceDirectory)**\*.$(UnitTestsProjectConventionName).csproj" />
 		</ItemGroup>	
 	</Target>
 	
-	<Target Name="RunIntegrationTests" DependsOnTargets="CreateDirectories;CompileCheck;BeforeRunIntegrationTests;CoreRunTests" />
+	<Target Name="RunIntegrationTests" DependsOnTargets="CompileCheck;CreateDirectories;BeforeRunIntegrationTests;CoreRunTests" />
 	<Target Name="BeforeRunIntegrationTests">
 		<ItemGroup>
 			<TestProjects Include="$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />
@@ -1073,7 +1073,7 @@
 
     <Target Name="Minify" DependsOnTargets="MinifyJavaScript;MinifyCss" />
 	<Target Name="PublishAssets" DependsOnTargets="PublishFlash" />
-	<Target Name="Release" DependsOnTargets="PrepareGlobalProperties;CreateDirectories;CompileCheck;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;AfterRelease" />
+	<Target Name="Release" DependsOnTargets="CompileCheck;PrepareGlobalProperties;CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;AfterRelease" />
 	<Target Name="BuildAndRunUnitTestsAndRelease" DependsOnTargets="BeforeRelease;BuildAndRunUnitTests;Release" />
 
 	<Target Name="Deploy" DependsOnTargets="DeployWebsite;DeployWebService;DeployStaticHtml;CoreMsDeployDeploy;DeployConsoleApp;DeployService;DeployDatabase;DeployAzure;AfterDeploy" />
