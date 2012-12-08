@@ -55,4 +55,4 @@ Static/Js/[a-zA-Z0-9\.\-]*.min.js
 .hg/*
 .svn/*
 .sass-cache/*
-*.DotSettings.user
+\.user
