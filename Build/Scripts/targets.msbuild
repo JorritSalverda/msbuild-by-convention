@@ -80,7 +80,7 @@
 	
 	</Target>
 	
-	<Target Name="Compile" DependsOnTargets="PrepareGlobalProperties;Clean;CopyDependencies;SetAssemblyFileVersion;ReplaceProjectImportStatements;BeforeCompile;CoreCompile;AfterCompile" />
+	<Target Name="Compile" DependsOnTargets="Clean;CopyDependencies;SetAssemblyFileVersion;ReplaceProjectImportStatements;BeforeCompile;CoreCompile;AfterCompile" />
 	<Target Name="BeforeCompile">
 		<!-- solutions that have a dependency order are specified in properties-repository-specific.msbuild; over here we add all solutions so it's not neccessary to list them all in properties-repository-specific.msbuild -->
 		<ItemGroup>
@@ -162,14 +162,14 @@
 
 	<!-- beginregion Tests targets -->
 	
-	<Target Name="RunUnitTests" DependsOnTargets="CompileCheck;CreateDirectories;BeforeRunUnitTests;CoreRunTests" />
+	<Target Name="RunUnitTests" DependsOnTargets="PrepareGlobalProperties;CompileCheck;CreateDirectories;BeforeRunUnitTests;CoreRunTests" />
 	<Target Name="BeforeRunUnitTests">
 		<ItemGroup>
 			<TestProjects Include="$(CSharpSourceDirectory)**\*.$(UnitTestsProjectConventionName).csproj" />
 		</ItemGroup>	
 	</Target>
 	
-	<Target Name="RunIntegrationTests" DependsOnTargets="CompileCheck;CreateDirectories;BeforeRunIntegrationTests;CoreRunTests" />
+	<Target Name="RunIntegrationTests" DependsOnTargets="PrepareGlobalProperties;CompileCheck;CreateDirectories;BeforeRunIntegrationTests;CoreRunTests" />
 	<Target Name="BeforeRunIntegrationTests">
 		<ItemGroup>
 			<TestProjects Include="$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />
@@ -1092,17 +1092,17 @@
 		
 	<!-- beginregion Targets to use from outside -->	
 	
-	<Target Name="Build" DependsOnTargets="Compile" />
+	<Target Name="Build" DependsOnTargets="PrepareGlobalProperties;Compile" />
     <Target Name="BuildAndRunUnitTests" DependsOnTargets="Build;RunUnitTests" />
     <Target Name="BuildAndRunIntegrationTests" DependsOnTargets="Build;RunIntegrationTests" />
     <Target Name="BuildAndRunAllTests" DependsOnTargets="Build;RunUnitTests;RunIntegrationTests" />
 
-    <Target Name="Minify" DependsOnTargets="MinifyJavaScript;MinifyCss" />
+    <Target Name="Minify" DependsOnTargets="PrepareGlobalProperties;MinifyJavaScript;MinifyCss" />
 	<Target Name="PublishAssets" DependsOnTargets="PublishFlash" />
-	<Target Name="Release" DependsOnTargets="CompileCheck;PrepareGlobalProperties;CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;AfterRelease" />
+	<Target Name="Release" DependsOnTargets="PrepareGlobalProperties;CompileCheck;CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;AfterRelease" />
 	<Target Name="BuildAndRunUnitTestsAndRelease" DependsOnTargets="BeforeRelease;BuildAndRunUnitTests;Release" />
 
-	<Target Name="Deploy" DependsOnTargets="DeployWebsite;DeployWebService;DeployStaticHtml;CoreMsDeployDeploy;DeployConsoleApp;DeployService;DeployDatabase;DeployAzure;AfterDeploy" />
+	<Target Name="Deploy" DependsOnTargets="PrepareGlobalProperties;DeployWebsite;DeployWebService;DeployStaticHtml;CoreMsDeployDeploy;DeployConsoleApp;DeployService;DeployDatabase;DeployAzure;AfterDeploy" />
 	<Target Name="Delete" DependsOnTargets="DeleteAzure;AfterDeploy" />
 
 	<!-- endregion Targets to use from outside -->	
