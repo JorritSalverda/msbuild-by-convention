@@ -69,7 +69,7 @@
 		<ContinueOnTestError Condition=" '$(ContinueOnTestError)' == '' ">False</ContinueOnTestError>
 		<OptimizeImages Condition=" '$(OptimizeImages)' == '' ">True</OptimizeImages>
 		<IncludeCoverage Condition=" '$(IncludeCoverage)' == '' ">False</IncludeCoverage>
-		<UseVersionedFiles Condition=" '$(UseVersionedFiles)' == '' ">False</UseVersionedFiles>
+		<UseVersionedFiles Condition=" '$(UseVersionedFiles)' == '' ">True</UseVersionedFiles>
 		
 		<!-- deploy properties -->
 		<ProjectToDeploy></ProjectToDeploy>	

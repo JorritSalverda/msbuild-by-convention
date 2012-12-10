@@ -14,7 +14,6 @@
 	<!-- override conventions if you want to deviate from the default ones -->	
 	<PropertyGroup>
 		<!--<DependencyDirectory>$(BaseDirectory)source\lib\</DependencyDirectory>-->
-		<UseVersionedFiles>True</UseVersionedFiles>
 	</PropertyGroup>	
 
 </Project>
