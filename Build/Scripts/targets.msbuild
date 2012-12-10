@@ -30,6 +30,7 @@
 
 		<PropertyGroup>
 			<BuildParameters>$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);SqlServerRedistPath=$(AbsoluteSqlServerRedistPath);VSToolsPath=$(AbsoluteVSToolsPath);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory)</BuildParameters>
+			<VersionedFilePostfix Condition=" '$(UseVersionedFiles)' == 'True' ">-$(BuildVersion)</VersionedFilePostfix>
 		</PropertyGroup>
 			
 	</Target>
@@ -284,7 +285,7 @@
 
 		<JavaScriptCompressorTask
 			SourceFiles="@(JavaScriptFiles)"
-			OutputFile="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)..\@(JavaScriptSubDirectory)-$(BuildVersion).min.js"
+			OutputFile="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)..\@(JavaScriptSubDirectory)$(VersionedFilePostfix).min.js"
 			ObfuscateJavaScript="True"
 			PreserveAllSemicolons="False"
 			DisableOptimizations="False"
@@ -321,7 +322,7 @@
 
 		<CssCompressorTask
 			SourceFiles="@(CssFiles)"
-			OutputFile="%(CssFiles.RootDir)%(CssFiles.Directory)@(CssSubDirectory)-$(BuildVersion).min.css"
+			OutputFile="%(CssFiles.RootDir)%(CssFiles.Directory)@(CssSubDirectory)$(VersionedFilePostfix).min.css"
 			CompressionType="Standard"
 			EncodingType="UTF8"
 			DeleteSourceFiles="false"
@@ -365,7 +366,7 @@
         <Error Text="Target path $(SwfTargetDirectory) doesn't exists. Put your as3proj file in a similar directory structure inside $(FlashSourceDirectory) as the one in $(CSharpSourceDirectory) to publish to." Condition=" !Exists('$(SwfTargetDirectory)') " />
 
 		<PropertyGroup>
-			<SwfTargetFile>$(SwfTargetDirectory)$(FlashProjectDirName).$(BuildVersion).swf</SwfTargetFile>
+			<SwfTargetFile>$(SwfTargetDirectory)$(FlashProjectDirName)$(VersionedFilePostfix).swf</SwfTargetFile>
 		</PropertyGroup>
 
 		<Message Text="Publishing %(FlashProjectDirs.RelativeDir) to $(SwfTargetFile)" Importance="high" />
@@ -382,11 +383,29 @@
 		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashAutoBuild[1]/text()">
 			<Output TaskParameter="Result" ItemName="FlashAutoBuild" />
 		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashCompilerLocale[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashCompilerLocale" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashCompilerAS3[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashCompilerAS3" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashCompilerStrict[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashCompilerStrict" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashCompilerDebug[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashCompilerDebug" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashCompilerOptimize[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashCompilerOptimize" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashCompilerSwfVersion[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashCompilerSwfVersion" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashCompilerTargetPlayer[1]/text()">
+			<Output TaskParameter="Result" ItemName="FlashCompilerTargetPlayer" />
+		</XmlPeek>
 		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashSrcDirectories/FlashSrcDirectory/text()">
 			<Output TaskParameter="Result" ItemName="FlashSrcDirectories" />
-		</XmlPeek>
-		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashLibDirectories/FlashLibDirectory/text()">
-			<Output TaskParameter="Result" ItemName="FlashLibDirectories" />
 		</XmlPeek>
 		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashEntryPointFile[1]/text()">
 			<Output TaskParameter="Result" ItemName="FlashEntryPointFile" />
@@ -403,6 +422,12 @@
 		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashHeight[1]/text()">
 			<Output TaskParameter="Result" ItemName="FlashHeight" />
 		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashLibs/FlashLib/text()">
+			<Output TaskParameter="Result" ItemName="FlashLibs" />
+		</XmlPeek>
+		<XmlPeek XmlInputPath="$(BuildPropertiesFile)" Query="/FlashProperties/FlashMetaDataTags/FlashMetaDataTag/text()">
+			<Output TaskParameter="Result" ItemName="FlashMetaDataTags" />
+		</XmlPeek>
 
 		<!-- remove old versions of published swfs -->
 		<ItemGroup>
@@ -413,7 +438,8 @@
 		<Delete Files="@(OldSwfsToDelete)" Condition=" @(FlashAutoBuild) != 'False' " />
 
 		<!-- compile flash and output to SwfTargetFile -->
-		<Exec WorkingDirectory="$(WorkingDir)" Command="&quot;$(FlexSdkPath)&quot; -static-link-runtime-shared-libraries=true -library-path+=@(FlashLibDirectories,' -library-path+=') -compiler.incremental=false -debug=false -default-background-color=0x@(FlashBackgroundColor) -default-frame-rate=@(FlashFrameRate) -default-size @(FlashWidth) @(FlashHeight) -source-path=@(FlashSrcDirectories,' -source-path+=') &quot;$(WorkingDir)@(FlashEntryPointFile)&quot; -o &quot;$(SwfTargetFile)&quot; -use-network=true" CustomWarningRegularExpression="Warning|Waarschuwing" CustomErrorRegularExpression="Error|Fout" Condition=" @(FlashAutoBuild) != 'False' " />
+		<Exec WorkingDirectory="$(WorkingDir)" Command="&quot;$(FlexSdkPath)&quot; -tools-locale=@(FlashCompilerLocale) -as3=@(FlashCompilerAS3) -strict=@(FlashCompilerStrict) -debug=@(FlashCompilerDebug) -optimize=@(FlashCompilerOptimize) -swf-version=@(FlashCompilerSwfVersion) -target-player=@(FlashCompilerTargetPlayer) -default-frame-rate=@(FlashFrameRate) -default-background-color=@(FlashBackgroundColor) -default-size=@(FlashWidth),@(FlashHeight) -source-path+=@(FlashSrcDirectories,' -source-path+=') -library-path+=@(FlashLibs,' -library-path+=') -keep-as3-metadata+=@(FlashMetaDataTags,' -keep-as3-metadata+=') -file-specs=$(WorkingDir)@(FlashEntryPointFile) -output=$(SwfTargetFile) -use-network=true -static-link-runtime-shared-libraries=true" CustomWarningRegularExpression="Warning|Waarschuwing" CustomErrorRegularExpression="Error|Fout" Condition=" @(FlashAutoBuild) != 'False' " />
+		
 	</Target>
 	
 	<Target Name="BeforeRelease">
@@ -573,7 +599,7 @@
 		</ItemGroup>
 		
 		<Attrib ReadOnly="false" Files="@(AllStaticFiles)" />
-	    <FileUpdate Files="@(AllStaticFiles)" Regex="1\.0\.0\.0" ReplacementText="$(BuildVersion)" Condition=" @(AllStaticFiles) != '' " />
+	    <FileUpdate Files="@(AllStaticFiles)" Regex="1\.0\.0\.0" ReplacementText="$(BuildVersion)" Condition=" @(AllStaticFiles) != '' And $(UseVersionedFiles) == 'True' " />
 	
 		<!-- remove debug sections -->
 		<FileUpdate Files="@(AllStaticFiles)" Regex="(&lt;!-- begin debug --&gt;.*?&lt;!-- end debug --&gt;)|(&lt;!-- begin release)|(end release --&gt;)" ReplacementText=" " Singleline="True" Multiline="True" Condition=" @(AllStaticFiles) != '' " />		
