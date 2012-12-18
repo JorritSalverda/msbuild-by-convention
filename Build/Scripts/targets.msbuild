@@ -1089,6 +1089,27 @@
 	</Target>
 
 	<!-- endregion AnalyzeCode targets -->	
+	
+	<!-- beginregion Optimize targets -->
+	
+	<Target Name="OptimizeImages">	
+		<!-- optimize all jpegs -->
+		<ItemGroup>
+			<AllJpegFiles Remove="@(AllJpegFiles)" />
+			<AllJpegFiles Include="$(SourceDirectory)**\*.jpg" />
+			<AllJpegFiles Include="$(SourceDirectory)**\*.jpeg" />
+		</ItemGroup>
+		<Exec Command="&quot;$(JpegtranPath)&quot; -progressive -optimize &quot;%(AllJpegFiles.FullPath)&quot; &quot;%(AllJpegFiles.FullPath)&quot;" Condition=" @(AllJpegFiles) != '' " />
+
+		<!-- optimize all pngs -->
+		<ItemGroup>
+			<AllPngFiles Remove="@(AllPngFiles)" />
+			<AllPngFiles Include="$(SourceDirectory)**\*.png" />
+		</ItemGroup>
+		<Exec Command="&quot;$(OptiPngPath)&quot; &quot;%(AllPngFiles.FullPath)&quot;" Condition=" @(AllPngFiles) != '' " />
+	</Target>
+	
+	<!-- endregion Optimize targets -->	
 		
 	<!-- beginregion Targets to use from outside -->	
 	
