@@ -54,6 +54,8 @@
 		<OpenCoverMSBuildTasksPath>$(OpenCoverPath)MSBuild\</OpenCoverMSBuildTasksPath>
 		<ReportGeneratorPath>$(BuildToolsDirectory)ReportGenerator.v1.6.1.0\</ReportGeneratorPath>		
 		<BuildVersionFilePath>$(ScriptsDirectory)buildversion.txt</BuildVersionFilePath>
+		<SonarRunnerPath>$(BuildToolsDirectory)sonar-runner-2.0\bin\sonar-runner.bat</SonarRunnerPath>
+		<GallioPath>$(BuildToolsDirectory)GallioBundle-3.4.14.0\</GallioPath>
 		
 		<!-- other properties -->
 		<BuildVersion Condition=" '$(BuildVersion)' == '' ">$(build_number)</BuildVersion>
@@ -70,6 +72,7 @@
 		<OptimizeImages Condition=" '$(OptimizeImages)' == '' ">True</OptimizeImages>
 		<IncludeCoverage Condition=" '$(IncludeCoverage)' == '' ">False</IncludeCoverage>
 		<UseVersionedFiles Condition=" '$(UseVersionedFiles)' == '' ">True</UseVersionedFiles>
+		<CopyDependenciesToBinFolder Condition=" '$(CopyDependenciesToBinFolder)' == '' ">False</CopyDependenciesToBinFolder>
 		
 		<!-- deploy properties -->
 		<ProjectToDeploy></ProjectToDeploy>	
@@ -92,6 +95,14 @@
 		<AzureSwapToProductionAfterDeploy Condition=" '$(AzureSwapToProductionAfterDeploy)' == '' ">False</AzureSwapToProductionAfterDeploy>
 		<AzureRemoveStagingAfterSwap Condition=" '$(AzureRemoveStagingAfterSwap)' == '' ">False</AzureRemoveStagingAfterSwap>		
 		<AzureDisallowMultipleActiveInstances Condition=" '$(AzureDisallowMultipleActiveInstances)' == '' ">False</AzureDisallowMultipleActiveInstances>		
+		
+		<!-- sonar analysis properties -->
+		<SonarHostUrl></SonarHostUrl>
+		<SonarDbDriver Condition=" '$(SonarDbDriver)' == '' ">com.mysql.jdbc.Driver</SonarDbDriver>
+		<SonarDbConnectionString></SonarDbConnectionString>
+		<SonarDbUsername></SonarDbUsername>
+		<SonarDbPassword></SonarDbPassword>
+		<SonarProfile Condition=" '$(SonarProfile)' == '' "></SonarProfile>
 		
 		<!-- delete properties -->
 		<ProjectToDelete></ProjectToDelete>

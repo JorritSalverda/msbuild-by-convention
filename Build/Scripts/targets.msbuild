@@ -50,9 +50,9 @@
 			<DependenciesToCopy Include="$(DependencyDirectory)**\*.dll" />
 			<DependenciesToCopy Include="$(DependencyDirectory)**\*.xml" />
 		</ItemGroup>
-		<Copy SourceFiles="@(DependenciesToCopy)" DestinationFolder="$(BinDirectory)" Condition=" @(DependenciesToCopy) != '' " />
+		<Copy SourceFiles="@(DependenciesToCopy)" DestinationFolder="$(BinDirectory)" Condition=" @(DependenciesToCopy) != '' And $(CopyDependenciesToBinFolder) == 'True' " />
 	</Target>
-
+	
 	<Target Name="SetAssemblyFileVersion">
 		<!-- set correct file version -->
 		<ItemGroup>
@@ -155,6 +155,7 @@
 		<Message Text="Other version, compile first" Importance="High" Condition=" @(BuildVersionFromFile) != $(BuildVersion) " />
 		
 		<CallTarget Targets="Compile" Condition=" @(BuildVersionFromFile) != $(BuildVersion) " />
+		<CallTarget Targets="SetAssemblyFileVersion" Condition=" @(BuildVersionFromFile) == $(BuildVersion) " />
 		
 	</Target>
 
@@ -1072,9 +1073,9 @@
 	
 	<!-- endregion Delete targets -->	
 	
-	<!-- beginregion AnalyzeCode targets -->	
+	<!-- beginregion Analyze targets -->	
 
-	<Target Name="AnalyzeCode" DependsOnTargets="Build">
+	<Target Name="AnalyzeWithFxCop" DependsOnTargets="Build">
 		<!-- Include all assemblies that are generated from our own projects -->
 		<ItemGroup>
 			<ProjectsToAnalyze Include="$(SourceDirectory)**\*.csproj" />
@@ -1087,8 +1088,29 @@
 		<!-- Run fxcop for AssembliesToAnalyze -->
 		<MSBuild.ExtensionPack.CodeQuality.FxCop TaskAction="Analyse" Files="@(AssembliesToAnalyze)" OutputFile="$(CodeAnalysisDirectory)FxCopReport.html" Rules="$(FxCopPath)Rules" FxCopPath="$(FxCopPath)FxCopCmd.exe" ShowSummary="true" LogToConsole="false" ReportXsl="$(FxCopPath)Xml\FxCopReport.xsl" DependencyDirectories="$(BinDirectory)" />
 	</Target>
+	
+	<Target Name="AnalyzeWithSonar" DependsOnTargets="PrepareGlobalProperties;CompileCheck">
+				
+		<ItemGroup>		
+			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(WebsiteProjectConventionName).sln" />
+			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(WebServiceProjectConventionName).sln" />
+			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(ConsoleAppProjectConventionName).sln" />
+			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(WindowsServiceProjectConventionName).sln" />			
+			
+			<AssembliesToExludeFromCoverage Include="$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />			
+		</ItemGroup>
+		
+		<PropertyGroup>
+			<ExcludeFromCoverage>@(AssembliesToExludeFromCoverage -> '%(Filename)', ',')</ExcludeFromCoverage>
+			<SonarConnectionParameters>-D sonar.host.url=&quot;$(SonarHostUrl)&quot; -D sonar.jdbc.driver=&quot;$(SonarDbDriver)&quot; -D sonar.jdbc.url=&quot;$(SonarDbConnectionString)&quot; -D sonar.jdbc.username=&quot;$(SonarDbUsername)&quot; -D sonar.jdbc.password=&quot;$(SonarDbPassword)&quot;</SonarConnectionParameters>
+			<SonarConnectionParameters Condition=" $(SonarProfile) != '' ">$(SonarConnectionParameters) -D sonar.profile=&quot;$(SonarProfile)&quot;</SonarConnectionParameters>
+		</PropertyGroup>
+	
+		<Exec Command="&quot;$(SonarRunnerPath)&quot; $(SonarConnectionParameters) -D sonar.projectVersion=&quot;$(BuildVersion)&quot; -D sonar.projectKey=&quot;%(SolutionsToAnalyze.Filename)&quot; -D sonar.projectName=&quot;%(SolutionsToAnalyze.Filename)&quot; -D sonar.language=&quot;cs&quot; -D sonar.dotnet.buildConfigurations=&quot;$(Configuration)&quot; -D sonar.dotnet.visualstudio.solution.file=&quot;%(SolutionsToAnalyze.RelativeDir)%(SolutionsToAnalyze.Filename)%(SolutionsToAnalyze.Extension)&quot; -D csharp.sonar.projectBaseDir=&quot;%(SolutionsToAnalyze.RelativeDir)&quot; -D sonar.gallio.installDirectory=&quot;$(GallioPath)&quot; -D sonar.gallio.coverage.tool=&quot;OpenCover&quot; -D sonar.opencover.installDirectory=&quot;$(OpenCoverPath)&quot; -D sonar.dotnet.visualstudio.testProjectPattern=*$(UnitTestsProjectConventionName)*;$(IntegrationTestsProjectConventionName)* -D sonar.gallio.coverage.excludes=&quot;$(ExcludeFromCoverage)&quot;" />
+		
+	</Target>
 
-	<!-- endregion AnalyzeCode targets -->	
+	<!-- endregion Analyze targets -->	
 	
 	<!-- beginregion Optimize targets -->
 	
