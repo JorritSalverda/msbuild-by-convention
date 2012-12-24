@@ -59,6 +59,7 @@
 			<AssemblyInfoFiles Include="$(CSharpSourceDirectory)**\AssemblyInfo.cs" />
 		</ItemGroup>
 		<Attrib ReadOnly="false" Files="@(AssemblyInfoFiles)" />
+	    <FileUpdate Files="@(AssemblyInfoFiles)" Regex="\[\s*assembly\s*:\s*AssemblyVersion\s*\(\s*&quot;[\d\.\*]+&quot;\s*\)\s*\]" ReplacementText="[assembly: AssemblyVersion(&quot;$(BuildVersion)&quot;)]" Condition=" @(AssemblyInfoFiles) != '' " />
 	    <FileUpdate Files="@(AssemblyInfoFiles)" Regex="\[\s*assembly\s*:\s*AssemblyFileVersion\s*\(\s*&quot;[\d\.\*]+&quot;\s*\)\s*\]" ReplacementText="[assembly: AssemblyFileVersion(&quot;$(BuildVersion)&quot;)]" Condition=" @(AssemblyInfoFiles) != '' " />
 	</Target>
 
