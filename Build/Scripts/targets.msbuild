@@ -1098,6 +1098,9 @@
 			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(ConsoleAppProjectConventionName).sln" />
 			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(WindowsServiceProjectConventionName).sln" />			
 			
+			<!-- if none of the above exist, look for any solution -->
+			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*.sln" Condition=" @(SolutionsToAnalyze) == '' " />
+			
 			<AssembliesToExludeFromCoverage Include="$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />			
 		</ItemGroup>
 		
