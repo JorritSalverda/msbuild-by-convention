@@ -83,6 +83,9 @@
 	
 	<Target Name="Compile" DependsOnTargets="Clean;CopyDependencies;SetAssemblyFileVersion;ReplaceProjectImportStatements;BeforeCompile;CoreCompile;AfterCompile" />
 	<Target Name="BeforeCompile">
+	
+		<CallTarget Targets="CheckJavascriptWithJsHint" Condition=" $(CheckJavascriptOnBuild) == 'True' " />
+	
 		<!-- solutions that have a dependency order are specified in properties-repository-specific.msbuild; over here we add all solutions so it's not neccessary to list them all in properties-repository-specific.msbuild -->
 		<ItemGroup>
 			<SolutionsToBuild Include="$(CSharpSourceDirectory)**\*.sln" />
@@ -118,7 +121,7 @@
 
 		<!-- copy output assemblies to build/bin directory -->
         <Copy SourceFiles="@(BuildOutput)" DestinationFolder="$(BinDirectory)" Condition = "%(Extension) == '.dll' Or %(Extension) == '.xml'" />
-    </Target>
+    </Target>	
 	<Target Name="AfterCompile">
 	
 		<!-- restore db project file -->
@@ -139,7 +142,18 @@
 
 		<!-- indicates which version has been built last in order to do a compile check -->
 		<WriteLinesToFile File="$(BuildVersionFilePath)" Lines="$(BuildVersion)" Overwrite="true" />
+
+	</Target>	
 	
+	<Target Name="CheckJavascriptWithJsHint">
+
+		<ItemGroup>
+			<!-- check all javascript files except for the ones where the filename ends in .min.js -->
+			<JavaScriptFiles Include="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\**\*.js" Exclude="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\**\*.min.js;" />
+		</ItemGroup>
+	
+		<Exec Command="cscript &quot;$(JSHintPath)&quot; %(JavaScriptFiles.RelativeDir)%(JavaScriptFiles.Filename)%(JavaScriptFiles.Extension)" />		
+		
 	</Target>	
 	
 	<Target Name="CompileCheck">
@@ -232,7 +246,13 @@
 		<Exec Command="$(MSTestRunnerPath) /testcontainer:%(MSTestTestAssemblies.Identity) /resultsfile:$(TestResultsDirectory)MsTest.%(MSTestTestAssemblies.Filename).Results.xml /nologo" Condition=" @(MSTestTestAssemblies) != '' " IgnoreExitCode="$(ContinueOnTestError)" />
 		
 	</Target>
+	
+	<Target Name="RunYSlowTests">
 
+		<Exec Command="&quot;$(PhantomJsPath)&quot; &quot;$(YSlowPath)&quot; -i grade -threshold '$(YSlowTreshold)' -f junit $(YSlowTestUrl) > $(TestResultsDirectory)yslow.xml"/>
+	
+	</Target>
+	
 	<!-- endregion Tests targets -->
 			
 	<!-- beginregion RunJMeterTests targets -->

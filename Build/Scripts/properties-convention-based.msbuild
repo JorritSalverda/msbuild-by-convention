@@ -56,6 +56,9 @@
 		<BuildVersionFilePath>$(ScriptsDirectory)buildversion.txt</BuildVersionFilePath>
 		<SonarRunnerPath>$(BuildToolsDirectory)sonar-runner-2.0\bin\sonar-runner.bat</SonarRunnerPath>
 		<GallioPath>$(BuildToolsDirectory)GallioBundle-3.4.14.0\</GallioPath>
+		<PhantomJsPath>$(BuildToolsDirectory)phantomjs-1.8.0-windows\phantomjs.exe</PhantomJsPath>
+		<YSlowPath>$(BuildToolsDirectory)yslow-phantomjs-3.1.1\yslow.js</YSlowPath>
+		<JSHintPath>$(BuildToolsDirectory)jshint-r12\env\wsh.js</JSHintPath>
 		
 		<!-- other properties -->
 		<BuildVersion Condition=" '$(BuildVersion)' == '' ">$(build_number)</BuildVersion>
@@ -73,6 +76,7 @@
 		<IncludeCoverage Condition=" '$(IncludeCoverage)' == '' ">False</IncludeCoverage>
 		<UseVersionedFiles Condition=" '$(UseVersionedFiles)' == '' ">True</UseVersionedFiles>
 		<CopyDependenciesToBinFolder Condition=" '$(CopyDependenciesToBinFolder)' == '' ">False</CopyDependenciesToBinFolder>
+		<CheckJavascriptOnBuild Condition=" '$(CheckJavascriptOnBuild)' == '' ">False</CheckJavascriptOnBuild>
 		
 		<!-- deploy properties -->
 		<ProjectToDeploy></ProjectToDeploy>	
@@ -103,6 +107,10 @@
 		<SonarDbUsername></SonarDbUsername>
 		<SonarDbPassword></SonarDbPassword>
 		<SonarProfile Condition=" '$(SonarProfile)' == '' "></SonarProfile>
+		
+		<!-- yslow test properties -->
+		<YSlowTestUrl></YSlowTestUrl>
+		<YSlowTreshold Condition=" '$(YSlowTreshold)' == '' ">B</YSlowTreshold>
 		
 		<!-- delete properties -->
 		<ProjectToDelete></ProjectToDelete>
