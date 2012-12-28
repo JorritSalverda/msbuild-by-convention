@@ -621,7 +621,7 @@
 		</ItemGroup>
 		
 		<Attrib ReadOnly="false" Files="@(AllStaticFiles)" />
-	    <FileUpdate Files="@(AllStaticFiles)" Regex="1\.0\.0\.0" ReplacementText="$(BuildVersion)" Condition=" @(AllStaticFiles) != '' And $(UseVersionedFiles) == 'True' " />
+	    <FileUpdate Files="@(AllStaticFiles)" Regex="1\.0\.0\.0" ReplacementText="$(BuildVersion)" Condition=" @(AllStaticFiles) != '' " />
 	
 		<!-- remove debug sections -->
 		<FileUpdate Files="@(AllStaticFiles)" Regex="(&lt;!-- begin debug --&gt;.*?&lt;!-- end debug --&gt;)|(&lt;!-- begin release)|(end release --&gt;)" ReplacementText=" " Singleline="True" Multiline="True" Condition=" @(AllStaticFiles) != '' " />		
