@@ -149,7 +149,7 @@
 
 		<ItemGroup>
 			<!-- check all javascript files except for the ones where the filename ends in .min.js -->
-			<JavaScriptFiles Include="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\**\*.js" Exclude="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\**\*.min.js;" />
+			<JavaScriptFiles Include="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\**\*.js" Exclude="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\**\*.min.js;$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\**\obj\*.js" />
 		</ItemGroup>
 	
 		<Exec Command="cscript &quot;$(JSHintPath)&quot; %(JavaScriptFiles.RelativeDir)%(JavaScriptFiles.Filename)%(JavaScriptFiles.Extension)" />		
