@@ -292,6 +292,7 @@
 		<Delete Files="@(OldJavaScriptFiles)" />
 
 		<ItemGroup>
+			<JavaScriptFiles Remove="@(JavaScriptFiles)" />
 			<JavaScriptFiles Include="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\**\*.js" Exclude="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\*.min.js" />
 			<!-- do not include js files in the js 'root'; put your code in subdirs -->
 			<JavaScriptFiles Remove="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\*.js" />
@@ -329,6 +330,7 @@
 		<Delete Files="@(OldCssFiles)" />
 
 		<ItemGroup>
+			<CssFiles Remove="@(CssFiles)" />
 			<CssFiles Include="$(SourceDirectory)**\$(CssDirectoryConventionName)\**\*.css" Exclude="$(SourceDirectory)**\$(CssDirectoryConventionName)\**\*.min.css" />
 			<!-- do not include css files in the css 'root'; put your code in subdirs (it should only contain stuff like _constants.scss) -->
 			<CssFiles Remove="$(SourceDirectory)**\$(CssDirectoryConventionName)\*.css" />
