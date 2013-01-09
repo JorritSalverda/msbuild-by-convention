@@ -59,6 +59,7 @@
 		<PhantomJsPath>$(BuildToolsDirectory)phantomjs-1.8.0-windows\phantomjs.exe</PhantomJsPath>
 		<YSlowPath>$(BuildToolsDirectory)yslow-phantomjs-3.1.1\yslow.js</YSlowPath>
 		<JSHintPath>$(BuildToolsDirectory)jshint-r12\env\wsh.js</JSHintPath>
+		<NuGetPath>$(BuildToolsDirectory)NuGet.v2.2.0\NuGet.exe</NuGetPath>
 		
 		<!-- other properties -->
 		<BuildVersion Condition=" '$(BuildVersion)' == '' ">$(build_number)</BuildVersion>
@@ -70,6 +71,7 @@
 		<BuildParameters Condition=" '$(Configuration)' == 'Debug' ">Configuration=$(Configuration);DebugSymbols=true;DebugType=full;RunCodeAnalysis=false;Optimize=false;PreBuildEvent=;PostBuildEvent=</BuildParameters>
 		<BuildParameters Condition=" '$(Configuration)' == 'Release' ">Configuration=$(Configuration);DebugSymbols=true;DebugType=pdbonly;RunCodeAnalysis=false;Optimize=true;PreBuildEvent=;PostBuildEvent=</BuildParameters>
 		<SuitedForAllEnvironmentsDirectoryName>AllEnvironments</SuitedForAllEnvironmentsDirectoryName>
+		<NuGetDirectoryName>NuGet</NuGetDirectoryName>
 		<CreateUpdateableAspxFilesInRelease>false</CreateUpdateableAspxFilesInRelease>
 		<ContinueOnTestError Condition=" '$(ContinueOnTestError)' == '' ">False</ContinueOnTestError>
 		<OptimizeImages Condition=" '$(OptimizeImages)' == '' ">True</OptimizeImages>
@@ -112,6 +114,11 @@
 		<YSlowTestUrl></YSlowTestUrl>
 		<YSlowTreshold Condition=" '$(YSlowTreshold)' == '' ">B</YSlowTreshold>
 		
+		<!-- nuget server properties -->
+		<NugetProjectToRelease></NugetProjectToRelease>
+		<NuGetApiKey></NuGetApiKey>
+		<NuGetServerUrl></NuGetServerUrl>		
+		
 		<!-- delete properties -->
 		<ProjectToDelete></ProjectToDelete>
 		
@@ -129,6 +136,7 @@
 		<UnitTestsProjectConventionName>UnitTests</UnitTestsProjectConventionName>
 		<IntegrationTestsProjectConventionName>IntegrationTests</IntegrationTestsProjectConventionName>
 		<StaticHtmlProjectConventionName>Html</StaticHtmlProjectConventionName>
+		<NugetProjectConventionName>NuGet</NugetProjectConventionName>
 	</PropertyGroup>
 	
 	<ItemGroup>
@@ -146,6 +154,7 @@
 		<ItemsToCopyToRelease Include="$(MSBuildCommunityTasksDirectory)**\*" />
 		<ItemsToCopyToRelease Include="$(MsDeployDirectory)*" />
 		<ItemsToCopyToRelease Include="$(SqlServerRedistPath)\**\*" />
+		<ItemsToCopyToRelease Include="$(NuGetPath)" />
 		<ItemsToCopyToRelease Include="$(ScriptsDirectory)*" Exclude="$(ScriptsDirectory)*.bat;$(ScriptsDirectory)*.txt" />
 		
 	</ItemGroup>		

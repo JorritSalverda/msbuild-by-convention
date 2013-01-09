@@ -868,6 +868,29 @@
 		</ItemGroup>		
 		
 	</Target>
+		
+	<Target Name="ReleaseNugetPackages" DependsOnTargets="BeforeReleaseNugetPackage;CoreReleaseNugetPackage" />
+	<Target Name="BeforeReleaseNugetPackage">
+		<ItemGroup>
+			<NuGetToRelease Include="$(CSharpSourceDirectory)**\*.$(NugetProjectConventionName).csproj" />
+			<NuGetToRelease Include="$(CSharpSourceDirectory)**\$(NugetProjectToRelease).csproj" Condition=" $(NugetProjectToRelease) != '' " />
+		</ItemGroup>	
+		
+		<Message Text="NuGetToRelease: @(NuGetToRelease)" />
+	</Target>
+	<Target Name="CoreReleaseNugetPackage" Inputs="%(NuGetToRelease.RootDir)%(NuGetToRelease.Directory)" Outputs="AlwaysExecute">
+	
+		<!-- create release directory -->
+		<MakeDir Directories="$(ReleaseDirectory)$(NuGetDirectoryName)" />
+	
+		<!-- create the package -->
+		<Exec Command="&quot;$(NuGetPath)&quot; pack &quot;%(NuGetToRelease.RelativeDir)%(NuGetToRelease.Filename)%(NuGetToRelease.Extension)&quot; -OutputDirectory $(ReleaseDirectory)$(NuGetDirectoryName) -Version $(BuildVersion) -Properties Configuration=$(Configuration)" />
+	
+		<ItemGroup>
+			<AllEnvironmentsToRelease Include="$(NuGetDirectoryName)" />
+		</ItemGroup>
+	
+	</Target>
 
 	<Target Name="AfterRelease">
 	
@@ -875,6 +898,7 @@
 			<AllProjectsToRelease Remove="@(AllProjectsToRelease)" />
 			<AllProjectsToRelease Include="@(ProjectsToRelease)" />
 			<AllProjectsToRelease Include="@(AzureToRelease)" />
+			<AllProjectsToRelease Include="@(NuGetToRelease)" />
 		</ItemGroup>	
 	
 		<!-- throw an error if there was nothing to release -->
@@ -1042,6 +1066,28 @@
 
 	</Target>
 
+	<Target Name="DeployNugetPackages" DependsOnTargets="BeforeDeployNugetPackage;CoreDeployNugetPackage" />
+	<Target Name="BeforeDeployNugetPackage">
+		<ItemGroup>
+			<NuGetToDeploy Include="$(ReleaseDirectory)$(NuGetDirectoryName)\$(ProjectToDeploy).$(BuildVersion).nupkg" Condition=" Exists('$(ReleaseDirectory)$(NuGetDirectoryName)\$(ProjectToDeploy).$(BuildVersion).nupkg') " />
+			<NuGetToDeploy Include="$(BaseDirectory)$(ProjectToDeploy).$(BuildVersion).nupkg" Condition=" !Exists('$(ReleaseDirectory)') And Exists('$(BaseDirectory)$(ProjectToDeploy).$(BuildVersion).nupkg') " />			
+		</ItemGroup>	
+
+		<Message Text="NuGetToDeploy: @(NuGetToDeploy)" />
+	</Target>
+	<Target Name="CoreDeployNugetPackage" Inputs="%(NuGetToDeploy.RootDir)%(NuGetToDeploy.Directory)%(NuGetToDeploy.Filename)" Outputs="AlwaysExecute">
+	
+		<Error Text="Please provide and api key with parameter NuGetApiKey." Condition=" $(NuGetApiKey) == '' " />
+	
+		<PropertyGroup>
+			<SourceParameter Condition=" '$(NuGetServerUrl)' != '' ">-s $(NuGetServerUrl)</SourceParameter>
+		</PropertyGroup>
+	
+		<!-- create the package -->
+		<Exec Command="&quot;$(NuGetPath)&quot; push &quot;%(NuGetToDeploy.RelativeDir)%(NuGetToDeploy.Filename)%(NuGetToDeploy.Extension)&quot; $(NuGetApiKey) $(SourceParameter)" />
+
+	</Target>	
+	
 	<Target Name="AfterDeploy">
 
 		<ItemGroup>
@@ -1051,6 +1097,7 @@
 			<AllProjectsToDeploy Include="@(ServicesToDeploy)" />
 			<AllProjectsToDeploy Include="@(DatabasesToDeploy)" />
 			<AllProjectsToDeploy Include="@(AzureToDeploy)" />
+			<AllProjectsToDeploy Include="@(NuGetToDeploy)" />
 		</ItemGroup>
 
 		<!-- throw an error if there was nothing to deploy -->
@@ -1168,10 +1215,10 @@
 
     <Target Name="Minify" DependsOnTargets="PrepareGlobalProperties;MinifyJavaScript;MinifyCss" />
 	<Target Name="PublishAssets" DependsOnTargets="PublishFlash" />
-	<Target Name="Release" DependsOnTargets="PrepareGlobalProperties;CompileCheck;CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;AfterRelease" />
+	<Target Name="Release" DependsOnTargets="PrepareGlobalProperties;CompileCheck;CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;ReleaseNugetPackages;AfterRelease" />
 	<Target Name="BuildAndRunUnitTestsAndRelease" DependsOnTargets="BeforeRelease;BuildAndRunUnitTests;Release" />
 
-	<Target Name="Deploy" DependsOnTargets="PrepareGlobalProperties;DeployWebsite;DeployWebService;DeployStaticHtml;CoreMsDeployDeploy;DeployConsoleApp;DeployService;DeployDatabase;DeployAzure;AfterDeploy" />
+	<Target Name="Deploy" DependsOnTargets="PrepareGlobalProperties;DeployWebsite;DeployWebService;DeployStaticHtml;CoreMsDeployDeploy;DeployConsoleApp;DeployService;DeployDatabase;DeployAzure;DeployNugetPackages;AfterDeploy" />
 	<Target Name="Delete" DependsOnTargets="DeleteAzure;AfterDeploy" />
 
 	<!-- endregion Targets to use from outside -->	
