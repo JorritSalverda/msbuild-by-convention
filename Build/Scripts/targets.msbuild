@@ -610,6 +610,7 @@
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*ReSharper*" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.sln" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\.svn\**\*" />
+			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)**\.sonar\**\*" />
 			<FilesToRemoveFromReleaseDirectory Include="$(ProjectReleaseDirectory)*.sublime-*" />			
 		</ItemGroup>
 		<Delete Files="@(FilesToRemoveFromReleaseDirectory)" />
@@ -1006,7 +1007,33 @@
 	<Target Name="CoreDeployService" Inputs="%(ServicesToDeploy.RootDir)%(ServicesToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
 	
 		<!-- todo deploy with msdeploy or robocopy -->
-	
+		<!-- call targets 'Deploy' with parameters '/p:DeployEnvironment=<environment to deploy to>;ProjectToDeploy=<project filename without extension>;DeployServer=<server to deploy to>;DeployDirectory=<path of the service directory within DeployServer>' -->
+		<Error Condition = " '$(DeployEnvironment)' == '' " Text="Please set parameter DeployEnvironment to select the proper artifacts to deploy." />
+
+		<!-- unzip file first -->
+		<Unzip ZipFileName="%(ServicesToDeploy.FullPath)" TargetDirectory="%(ServicesToDeploy.RootDir)%(ServicesToDeploy.Directory)$(ProjectToDeploy)" />
+		
+		<PropertyGroup>
+			<ServiceName>$(ProjectToDeploy).$(DeployEnvironment)</ServiceName>
+			<ProjectReleaseDirectory>%(ServicesToDeploy.RootDir)%(ServicesToDeploy.Directory)$(ProjectToDeploy)</ProjectReleaseDirectory>
+		</PropertyGroup>		
+		
+		<!-- todo create service if it does not exists -->
+		<!--
+		sc.exe \\$(DeployServer) create $(ServiceName) binPath= &quot;$(DeployDirectory)&quot; start= auto displayname= &quot;$(ProjectToDeploy) ($(DeployEnvironment))&quot;
+		-->
+		
+		<!-- stop the service before updating -->
+		<Exec Command="sc.exe \\$(DeployServer) stop $(ServiceName)" ContinueOnError="true" />
+		
+		<Exec Command="robocopy.exe &quot;$(ProjectReleaseDirectory)&quot; &quot;\\$(DeployServer)\$(DeployDirectory)&quot; /MIR" ContinueOnError="True">
+			<Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
+		</Exec>
+		<Error Condition = " '$(ErrorCode)' != '0' And '$(ErrorCode)' != '1'  " Text="RoboCopy failed. Examine the log." />
+		
+		<!-- start the service -->
+		<Exec Command="sc.exe \\$(DeployServer) start $(ServiceName)" />
+			
 	</Target>	
 
 	<Target Name="DeployDatabase" DependsOnTargets="BeforeDeployDatabase;CoreDeployDatabase" />

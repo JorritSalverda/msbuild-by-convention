@@ -89,6 +89,7 @@
 		<DeployWarmupUrl></DeployWarmupUrl>
 		<DeploySkipDirectoryPattern></DeploySkipDirectoryPattern>
 		<DeploySkipFilePattern></DeploySkipFilePattern>
+		<DeployDirectory></DeployDirectory>
 		
 		<!-- deploy azure properties -->
 		<AzureSubscriptionID></AzureSubscriptionID>
