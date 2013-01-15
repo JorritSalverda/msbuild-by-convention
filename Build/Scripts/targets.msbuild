@@ -485,7 +485,8 @@
 		<ItemGroup>
 			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(WebsiteProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>True</UseAspNetCompilerForRelease>
-				<FilesToCopyForReleasePattern></FilesToCopyForReleasePattern>	
+				<FilesToCopyForReleasePattern></FilesToCopyForReleasePattern>
+				<TargetConfigExtension>dll.config</TargetConfigExtension>
 			</ProjectsToRelease>
 		</ItemGroup>	
 	</Target>
@@ -495,6 +496,7 @@
 			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(WebServiceProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>True</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern></FilesToCopyForReleasePattern>
+				<TargetConfigExtension>dll.config</TargetConfigExtension>
 			</ProjectsToRelease>
 		</ItemGroup>	
 	</Target>
@@ -504,6 +506,7 @@
 			<ProjectsToRelease Include="$(HtmlSourceDirectory)**\*.$(StaticHtmlProjectConventionName)\index.html">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern>**\*</FilesToCopyForReleasePattern>				
+				<TargetConfigExtension>dll.config</TargetConfigExtension>
 			</ProjectsToRelease>			
 		</ItemGroup>	
 	</Target>	
@@ -513,6 +516,7 @@
 			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(ConsoleAppProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern>bin\$(Configuration)\*</FilesToCopyForReleasePattern>
+				<TargetConfigExtension>exe.config</TargetConfigExtension>
 			</ProjectsToRelease>
 		</ItemGroup>	
 	</Target>
@@ -522,6 +526,7 @@
 			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(WindowsServiceProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern>bin\$(Configuration)\*</FilesToCopyForReleasePattern>
+				<TargetConfigExtension>exe.config</TargetConfigExtension>
 			</ProjectsToRelease>
 		</ItemGroup>	
 	</Target>
@@ -531,6 +536,7 @@
 			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(WorkerProjectConventionName).csproj">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
 				<FilesToCopyForReleasePattern>bin\$(Configuration)\*</FilesToCopyForReleasePattern>
+				<TargetConfigExtension>dll.config</TargetConfigExtension>
 			</ProjectsToRelease>
 		</ItemGroup>	
 	</Target>
@@ -702,9 +708,9 @@
 		<!-- transform *.config -->
 		<TransformXml Source="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).config" Destination="$(ReleaseDirectory)%(ConfigsToTransform.Environment)\$(RelativeProjectReleaseDirectory)%(ConfigsToTransform.Identity).config" Transform="$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config" Condition=" Exists('$(ProjectSourceDirectory)%(ConfigsToTransform.Identity).%(ConfigsToTransform.Environment).config') " />
 
-		<!-- rename transformed app.config to *.dll.config -->
+		<!-- rename transformed app.config to *.dll.config or *.exe.config -->
 		<PropertyGroup>
-			<DllConfigName>%(ProjectsToRelease.Filename).dll.config</DllConfigName>
+			<DllConfigName>%(ProjectsToRelease.Filename).%(ProjectsToRelease.TargetConfigExtension)</DllConfigName>
 		</PropertyGroup>
 		<ItemGroup>
 			<AppConfigToMove Remove="@(AppConfigToMove)" />
@@ -1021,6 +1027,8 @@
 		<!-- todo create service if it does not exists -->
 		<!--
 		sc.exe \\$(DeployServer) create $(ServiceName) binPath= &quot;$(DeployDirectory)&quot; start= auto displayname= &quot;$(ProjectToDeploy) ($(DeployEnvironment))&quot;
+		
+		taskkill /f /IM $(ProjectToDeploy).exe
 		-->
 		
 		<!-- stop the service before updating -->
@@ -1029,7 +1037,7 @@
 		<Exec Command="robocopy.exe &quot;$(ProjectReleaseDirectory)&quot; &quot;\\$(DeployServer)\$(DeployDirectory)&quot; /MIR" ContinueOnError="True">
 			<Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
 		</Exec>
-		<Error Condition = " '$(ErrorCode)' != '0' And '$(ErrorCode)' != '1'  " Text="RoboCopy failed. Examine the log." />
+		<Error Condition = " '$(ErrorCode)' != '0' And '$(ErrorCode)' != '1' And '$(ErrorCode)' != '2' And '$(ErrorCode)' != '3' " Text="RoboCopy failed. Examine the log." />
 		
 		<!-- start the service -->
 		<Exec Command="sc.exe \\$(DeployServer) start $(ServiceName)" />
