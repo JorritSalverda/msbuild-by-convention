@@ -27,9 +27,15 @@
 		<ConvertToAbsolutePath Paths="$(BuildToolsDirectory)">
 			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteBuildToolsDirectory" />
 		</ConvertToAbsolutePath>
-
+		<ConvertToAbsolutePath Paths="$(VisualStudioSqlServerDataToolsDir)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteVisualStudioSqlServerDataToolsDir" />
+		</ConvertToAbsolutePath>
+		<ConvertToAbsolutePath Paths="$(CommonTargetsExtensionFile)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteCommonTargetsExtensionFile" />
+		</ConvertToAbsolutePath>		
+		
 		<PropertyGroup>
-			<BuildParameters>$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);SqlServerRedistPath=$(AbsoluteSqlServerRedistPath);VSToolsPath=$(AbsoluteVSToolsPath);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory)</BuildParameters>
+			<BuildParameters>$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);SqlServerRedistPath=$(AbsoluteSqlServerRedistPath);VSToolsPath=$(AbsoluteVSToolsPath);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory);SqlServerRedistPath=$(AbsoluteSqlServerRedistPath);SsdtTargetsParentPath=$(AbsoluteVisualStudioSqlServerDataToolsDir);CommonTargetsExtensionFile=$(AbsoluteCommonTargetsExtensionFile)</BuildParameters>
 			<VersionedFilePostfix Condition=" '$(UseVersionedFiles)' == 'True' ">-$(BuildVersion)</VersionedFilePostfix>
 		</PropertyGroup>
 			
@@ -69,9 +75,6 @@
 			<DbProjectFiles Remove="@(DbProjectFiles)" />
 			<DbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).sqlproj" />
 		</ItemGroup>
-		<ConvertToAbsolutePath Paths="$(VisualStudioSqlServerDataToolsDir)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteVisualStudioSqlServerDataToolsDir" />
-		</ConvertToAbsolutePath>
 		
 		<!-- keep backup of the project file -->
 		<Copy SourceFiles="@(DbProjectFiles)" DestinationFiles="%(DbProjectFiles.FullPath).original" /> 
@@ -1076,7 +1079,7 @@
 		</ItemGroup>
 	</Target>
 	<Target Name="CoreDeployAzure" Inputs="%(AzureToDeploy.RootDir)%(AzureToDeploy.Directory)" Outputs="NonExistingOutputToTriggerTargetForEveryProject">
-		<!-- call targets 'Deploy' with parameters '/p:DeployEnvironment=<environment to deploy to>;ProjectToDeploy=<azure project filename without extension>;AzureSubscriptionID=<AzureSubscriptionID>;AzureCertificateFilename=<AzureCertificateFilename>;AzureCertificatePassword=<AzureCertificatePassword>;AzureHostedServiceName=<AzureHostedServiceName>;AzureStorageAccountName=<AzureStorageAccountName>;AzureStorageAccountKey=<AzureStorageAccountKey>;AzureSwapToProductionAfterDeploy=(True|False);AzureRemoveStagingAfterSwap=(True|False);AzureDisallowMultipleActiveInstances=(True|False)' -->
+		<!-- call targets 'Deploy' with parameters '/p:DeployEnvironment=<environment to deploy to>;ProjectToDeploy=<azure project filename without extension>;AzureSubscriptionID=<AzureSubscriptionID>;AzureCertificateFilename=<AzureCertificateFilename>;AzureCertificatePassword=<AzureCertificatePassword>;AzureHostedServiceName=<AzureHostedServiceName>;AzureStorageAccountName=<AzureStorageAccountName>;AzureStorageAccountKey=<AzureStorageAccountKey>;AzureSwapToProductionAfterDeploy=(True|False);AzureRemoveStagingAfterSwap=(True|False);AzureUpgradeInPlace=(True|False)' -->
 
 		<Error Condition = " '$(DeployEnvironment)' == '' And Exists('$(ReleaseDirectory)') " Text="Please set parameter DeployEnvironment to select the proper artifacts to deploy." />
 			
@@ -1094,11 +1097,10 @@
 			<PackageName>$(ProjectToDeploy).cspkg</PackageName>
 			<ServiceConfigName>ServiceConfiguration.cscfg</ServiceConfigName>
 		</PropertyGroup>
-
-		<!-- http://blogs.msdn.com/b/tomholl/archive/2011/02/23/using-msbuild-to-deploy-to-multiple-windows-azure-environments.aspx -->
-		<!-- http://code-inside.de/blog-in/2011/03/14/automatically-deployment-on-windows-azure-with-the-help-of-a-buildserver-via-powershell/ -->
-		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="$(PowershellPath) -f $(AzureDeployScript) $(AzureSubscriptionID) $(AzureCertificateFilename) $(AzureCertificatePassword) $(PackageLocation) $(PackageName) $(ServiceConfigName) $(AzureHostedServiceName) $(AzureStorageAccountName) $(AzureStorageAccountKey) $(BuildVersion) $(AzureSwapToProductionAfterDeploy) $(AzureRemoveStagingAfterSwap) $(AzureDisallowMultipleActiveInstances) " />
-
+		
+		<!-- https://www.windowsazure.com/en-us/develop/net/common-tasks/continuous-delivery/ -->
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="$(PowershellPath) -f $(AzureDeployScript) -serviceName $(AzureHostedServiceName) -storageAccountName $(AzureStorageAccountName) -packageLocation $(PackageLocation)\$(PackageName) -cloudConfigLocation $(PackageLocation)\$(ServiceConfigName) -deploymentLabel $(BuildVersion) -certificateFilename $(AzureCertificateFilename) -certificatePassword $(AzureCertificatePassword) -subscriptionid $(AzureSubscriptionID) -swapAfterDeploy $(AzureSwapToProductionAfterDeploy) -deleteStagingAfterSwap $(AzureRemoveStagingAfterSwap) –enableDeploymentUpgrade $(AzureUpgradeInPlace)" />	
+		
 	</Target>
 
 	<Target Name="DeployNugetPackages" DependsOnTargets="BeforeDeployNugetPackage;CoreDeployNugetPackage" />
@@ -1154,9 +1156,10 @@
 	</Target>
 	<Target Name="CoreDeleteAzure" Inputs="%(AzureToDelete.RootDir)%(AzureToDelete.Directory)" Outputs="AlwaysExecute">
 		<!-- call targets 'Delete' with parameters 'ProjectToDelete=<azure project filename without extension>;AzureSubscriptionID=<AzureSubscriptionID>;AzureCertificateFilename=<AzureCertificateFilename>;AzureCertificatePassword=<AzureCertificatePassword>;AzureHostedServiceName=<AzureHostedServiceName>;AzureHostedServiceSlot=<Staging|Production>' -->
-
-		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="$(PowershellPath) -f $(AzureDeleteScript) $(AzureSubscriptionID) $(AzureCertificateFilename) $(AzureCertificatePassword) $(AzureHostedServiceName) $(AzureHostedServiceSlot) " />
-
+		
+		<!-- https://www.windowsazure.com/en-us/develop/net/common-tasks/continuous-delivery/ -->
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="$(PowershellPath) -f $(AzureDeleteScript) -serviceName $(AzureHostedServiceName) -certificateFilename $(AzureCertificateFilename) -certificatePassword $(AzureCertificatePassword) -subscriptionid $(AzureSubscriptionID) -swapAfterDeploy $(AzureSwapToProductionAfterDeploy) -hostedServiceSlot $(AzureHostedServiceSlot)" />	
+		
 	</Target>
 
 	<Target Name="AfterDelete">
@@ -1181,6 +1184,7 @@
 	<!-- beginregion Analyze targets -->	
 
 	<Target Name="AnalyzeWithFxCop" DependsOnTargets="Build">
+	
 		<!-- Include all assemblies that are generated from our own projects -->
 		<ItemGroup>
 			<ProjectsToAnalyze Include="$(SourceDirectory)**\*.csproj" />
@@ -1191,7 +1195,8 @@
 		</ItemGroup>
 
 		<!-- Run fxcop for AssembliesToAnalyze -->
-		<MSBuild.ExtensionPack.CodeQuality.FxCop TaskAction="Analyse" Files="@(AssembliesToAnalyze)" OutputFile="$(CodeAnalysisDirectory)FxCopReport.html" Rules="$(FxCopPath)Rules" FxCopPath="$(FxCopPath)FxCopCmd.exe" ShowSummary="true" LogToConsole="false" ReportXsl="$(FxCopPath)Xml\FxCopReport.xsl" DependencyDirectories="$(BinDirectory)" />
+		<MSBuild.ExtensionPack.CodeQuality.FxCop TaskAction="Analyse" Files="@(AssembliesToAnalyze)" OutputFile="$(CodeAnalysisDirectory)FxCopReport.html" Rules="$(FxCopPath)Rules" FxCopPath="$(FxCopPath)FxCopCmd.exe" ShowSummary="true" LogToConsole="false" ReportXsl="$(FxCopPath)Xml\FxCopReport.xsl" DependencyDirectories="$(BinDirectory)" Condition=" $(SkipAnalysis) == 'False' " />
+		
 	</Target>
 	
 	<Target Name="AnalyzeWithSonar" DependsOnTargets="PrepareGlobalProperties;CompileCheck">
@@ -1214,7 +1219,7 @@
 			<SonarConnectionParameters Condition=" $(SonarProfile) != '' ">$(SonarConnectionParameters) -D sonar.profile=&quot;$(SonarProfile)&quot;</SonarConnectionParameters>
 		</PropertyGroup>
 	
-		<Exec Command="&quot;$(SonarRunnerPath)&quot; $(SonarConnectionParameters) -D sonar.projectVersion=$(BuildVersion) -D sonar.projectKey=%(SolutionsToAnalyze.Filename) -D sonar.projectName=%(SolutionsToAnalyze.Filename) -D sonar.language=cs -D sonar.dotnet.buildConfigurations=$(Configuration) -D sonar.dotnet.visualstudio.solution.file=%(SolutionsToAnalyze.RelativeDir)%(SolutionsToAnalyze.Filename)%(SolutionsToAnalyze.Extension) -D csharp.sonar.projectBaseDir=%(SolutionsToAnalyze.RelativeDir) -D sonar.gallio.installDirectory=$(GallioPath) -D sonar.gallio.coverage.tool=OpenCover -D sonar.opencover.installDirectory=$(OpenCoverPath) -D sonar.dotnet.visualstudio.testProjectPattern=*$(UnitTestsProjectConventionName)*;*$(IntegrationTestsProjectConventionName)* -D sonar.gallio.coverage.excludes=&quot;$(ExcludeFromCoverage)&quot;" />
+		<Exec Command="&quot;$(SonarRunnerPath)&quot; $(SonarConnectionParameters) -D sonar.projectVersion=$(BuildVersion) -D sonar.projectKey=%(SolutionsToAnalyze.Filename) -D sonar.projectName=%(SolutionsToAnalyze.Filename) -D sonar.language=cs -D sonar.dotnet.buildConfigurations=$(Configuration) -D sonar.dotnet.visualstudio.solution.file=%(SolutionsToAnalyze.RelativeDir)%(SolutionsToAnalyze.Filename)%(SolutionsToAnalyze.Extension) -D csharp.sonar.projectBaseDir=%(SolutionsToAnalyze.RelativeDir) -D sonar.gallio.installDirectory=$(GallioPath) -D sonar.gallio.coverage.tool=OpenCover -D sonar.opencover.installDirectory=$(OpenCoverPath) -D sonar.dotnet.visualstudio.testProjectPattern=*$(UnitTestsProjectConventionName)*;*$(IntegrationTestsProjectConventionName)* -D sonar.gallio.coverage.excludes=&quot;$(ExcludeFromCoverage)&quot;" Condition=" $(SkipAnalysis) == 'False' " />
 		
 	</Target>
 

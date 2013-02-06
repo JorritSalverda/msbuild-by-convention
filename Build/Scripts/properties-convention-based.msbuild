@@ -36,6 +36,7 @@
 		<MsDeployDirectory>$(BuildToolsDirectory)MsDeploy.v2\</MsDeployDirectory>
 		<MsDeployPath>$(MsDeployDirectory)msdeploy.exe</MsDeployPath>
 		<CloudExtensionsDir>$(BuildToolsDirectory)Windows.Azure.Tools.v1.8\</CloudExtensionsDir>
+		<CommonTargetsExtensionFile>$(BuildToolsDirectory)Microsoft.Common.targets\Microsoft.WindowsAzure.Common.targets</CommonTargetsExtensionFile>
 		<PowershellPath>$(windir)\system32\WindowsPowerShell\v1.0\powershell.exe</PowershellPath>
 		<AzureDeployScript>AzureDeploy.ps1</AzureDeployScript>
 		<AzureDeleteScript>AzureDelete.ps1</AzureDeleteScript>
@@ -79,6 +80,7 @@
 		<UseVersionedFiles Condition=" '$(UseVersionedFiles)' == '' ">True</UseVersionedFiles>
 		<CopyDependenciesToBinFolder Condition=" '$(CopyDependenciesToBinFolder)' == '' ">False</CopyDependenciesToBinFolder>
 		<CheckJavascriptOnBuild Condition=" '$(CheckJavascriptOnBuild)' == '' ">False</CheckJavascriptOnBuild>
+		<SkipAnalysis Condition=" '$(SkipAnalysis)' == '' ">False</SkipAnalysis>
 		
 		<!-- deploy properties -->
 		<ProjectToDeploy></ProjectToDeploy>	
@@ -99,9 +101,9 @@
 		<AzureHostedServiceSlot></AzureHostedServiceSlot>
 		<AzureStorageAccountName></AzureStorageAccountName>
 		<AzureStorageAccountKey></AzureStorageAccountKey>
-		<AzureSwapToProductionAfterDeploy Condition=" '$(AzureSwapToProductionAfterDeploy)' == '' ">False</AzureSwapToProductionAfterDeploy>
-		<AzureRemoveStagingAfterSwap Condition=" '$(AzureRemoveStagingAfterSwap)' == '' ">False</AzureRemoveStagingAfterSwap>		
-		<AzureDisallowMultipleActiveInstances Condition=" '$(AzureDisallowMultipleActiveInstances)' == '' ">False</AzureDisallowMultipleActiveInstances>		
+		<AzureSwapToProductionAfterDeploy Condition=" '$(AzureSwapToProductionAfterDeploy)' == '' ">True</AzureSwapToProductionAfterDeploy>
+		<AzureRemoveStagingAfterSwap Condition=" '$(AzureRemoveStagingAfterSwap)' == '' ">True</AzureRemoveStagingAfterSwap>		
+		<AzureUpgradeInPlace Condition=" '$(AzureUpgradeInPlace)' == '' ">False</AzureUpgradeInPlace>
 		
 		<!-- sonar analysis properties -->
 		<SonarHostUrl></SonarHostUrl>
