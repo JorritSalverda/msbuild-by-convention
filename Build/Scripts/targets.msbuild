@@ -238,7 +238,11 @@
 			<MSpecTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)Machine.Specifications.dll') " />
 		</ItemGroup>
 
-		<Exec Command="$(MSpecRunnerPath) --teamcity --html $(TestResultsDirectory) @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " IgnoreExitCode="$(ContinueOnTestError)" />
+		<Exec Command="$(MSpecRunnerPath) --xml $(TestResultsDirectory)MSpecTemp.Results.%(MSpecTestAssemblies.Filename).xml @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " IgnoreExitCode="$(ContinueOnTestError)" />
+
+		<!-- transform mspec xml to junit xml (https://gist.github.com/Kyrodan/1183475) -->		
+		<XslTransformation  XmlInputPaths="$(TestResultsDirectory)MSpecTemp.Results.%(MSpecTestAssemblies.Filename).xml" XslInputPath="$(MSpecToJUnitXsltPath)" OutputPaths="$(TestResultsDirectory)MSpec.Results.%(MSpecTestAssemblies.Filename).xml"/>
+		<Delete Files="$(TestResultsDirectory)MSpecTemp.Results.%(MSpecTestAssemblies.Filename).xml" />
 		
 		<!-- filter out test assemblies if Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll is not referenced -->
 		<ItemGroup>
