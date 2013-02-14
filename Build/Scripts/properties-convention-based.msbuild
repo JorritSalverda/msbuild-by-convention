@@ -27,6 +27,7 @@
 		<!-- tool paths -->
 		<NUnitToolPath>$(BuildToolsDirectory)NUnit-2.6.0.12051\</NUnitToolPath>
 		<MSpecRunnerPath>$(BuildToolsDirectory)Machine.Specifications.0.5.7\tools\mspec-clr4.exe</MSpecRunnerPath>
+		<MSpecToJUnitXsltPath>$(BuildToolsDirectory)MSpecToJunitXslt\MSpecToJUnit.xslt</MSpecToJUnitXsltPath>
 		<MSTestRunnerPath>$(BuildToolsDirectory)MSTest.v11.0.50727.1\MSTest.exe</MSTestRunnerPath>
 		<MSBuildCommunityTasksDirectory>$(BuildToolsDirectory)MSBuildTasks.1.4.0.45\</MSBuildCommunityTasksDirectory>
 		<MSBuildCommunityTasksPath>$(MSBuildCommunityTasksDirectory)MSBuild.Community.Tasks.dll</MSBuildCommunityTasksPath>
