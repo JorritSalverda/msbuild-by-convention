@@ -203,54 +203,61 @@
 		<ItemGroup>
 			<TestAssemblies Remove="@(TestAssemblies)" />
 			<TestAssemblies Include="%(TestProjects.RelativeDir)bin\$(Configuration)\%(TestProjects.Filename).dll" />
+			<AssembliesToReportCoverage Remove="@(AssembliesToReportCoverage)" />
+			<AssembliesToReportCoverage Include="$(CSharpSourceDirectory)**\*.csproj" Exclude="$(CSharpSourceDirectory)**\*.$(UnitTestsProjectConventionName).csproj;$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />
 		</ItemGroup>		
 
+		<PropertyGroup>
+			<OpenCoverFilter>+[@(AssembliesToReportCoverage -> '%(Filename)', ']* +[')]*</OpenCoverFilter>
+		</PropertyGroup>		
+		
 		<!-- filter out test assemblies if nunit.framework.dll is not referenced -->
 		<ItemGroup>
 			<NunitTestAssemblies Remove="@(NunitTestAssemblies)" />
 			<NunitTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)nunit.framework.dll') " />
 		</ItemGroup>
 
+		<!-- run tests if coverage is disabled -->
 		<NUnit Assemblies="@(NunitTestAssemblies)" ToolPath="$(NUnitToolPath)" OutputXmlFile="$(TestResultsDirectory)NUnit.Results.%(NunitTestAssemblies.Filename).xml" DisableShadowCopy="true" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'False' " ContinueOnError="$(ContinueOnTestError)" />
-	
-		<ItemGroup>
-			<AssembliesToReportCoverage Remove="@(AssembliesToReportCoverage)" />
-			<AssembliesToReportCoverage Include="$(CSharpSourceDirectory)**\*.csproj" Exclude="$(CSharpSourceDirectory)**\*.$(UnitTestsProjectConventionName).csproj;$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />
-		</ItemGroup>
 		
-		<PropertyGroup>
-			<OpenCoverFilter>+[@(AssembliesToReportCoverage -> '%(Filename)', ']* +[')]*</OpenCoverFilter>
-		</PropertyGroup>
-		
-		<!-- https://github.com/sawilde/opencover/wiki/Usage -->
+		<!-- run tests with coverage (https://github.com/sawilde/opencover/wiki/Usage) -->
 		<Exec Command="$(OpenCoverPath)OpenCover.Console.exe -register:user -returntargetcode -target:$(NUnitToolPath)nunit-console.exe -targetargs:&quot;@(NunitTestAssemblies -> '%(FullPath)', ' ') /result=$(TestResultsDirectory)NUnit.Results.%(NunitTestAssemblies.Filename).xml /noshadow&quot; -filter:&quot;$(OpenCoverFilter)&quot; -output:$(CodeCoverageDirectory)NUnit.Coverage.%(NunitTestAssemblies.Filename).xml" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'True' " ContinueOnError="$(ContinueOnTestError)" />
-		
-		<!-- http://reportgenerator.codeplex.com/ -->
-		<Exec Command="&quot;$(ReportGeneratorPath)ReportGenerator.exe&quot; &quot;-reports:$(CodeCoverageDirectory)\*.xml&quot; &quot;-targetdir:$(CodeCoverageDirectory)\&quot; -reporttypes:Html;HtmlSummary" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'True' " />
-
-		<!--
-		<Delete Files="$(CodeCoverageDirectory)NUnit.Coverage.%(NunitTestAssemblies.Filename).xml" />		
-		-->
-		
+			
+			
+			
 		<!-- filter out test assemblies if Machine.Specifications.dll is not referenced -->
 		<ItemGroup>
 			<MSpecTestAssemblies Remove="@(MSpecTestAssemblies)" />
 			<MSpecTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)Machine.Specifications.dll') " />
 		</ItemGroup>
 
-		<Exec Command="$(MSpecRunnerPath) --xml $(TestResultsDirectory)MSpecTemp.Results.%(MSpecTestAssemblies.Filename).xml @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' " IgnoreExitCode="$(ContinueOnTestError)" />
+		<!-- run tests if coverage is disabled -->
+		<Exec Command="$(MSpecRunnerPath) --xml $(TestResultsDirectory)MSpecTemp.Results.%(MSpecTestAssemblies.Filename).xml @(MSpecTestAssemblies -> '%(Identity)', ' ')" Condition=" @(MSpecTestAssemblies) != '' And $(IncludeCoverage) == 'False' " IgnoreExitCode="$(ContinueOnTestError)" />
 
 		<!-- transform mspec xml to junit xml (https://gist.github.com/Kyrodan/1183475) -->		
-		<XslTransformation  XmlInputPaths="$(TestResultsDirectory)MSpecTemp.Results.%(MSpecTestAssemblies.Filename).xml" XslInputPath="$(MSpecToJUnitXsltPath)" OutputPaths="$(TestResultsDirectory)MSpec.Results.%(MSpecTestAssemblies.Filename).xml" Condition=" @(MSpecTestAssemblies) != '' " />
-		<Delete Files="$(TestResultsDirectory)MSpecTemp.Results.%(MSpecTestAssemblies.Filename).xml" Condition=" @(MSpecTestAssemblies) != '' " />
+		<XslTransformation  XmlInputPaths="$(TestResultsDirectory)MSpecTemp.Results.%(MSpecTestAssemblies.Filename).xml" XslInputPath="$(MSpecToJUnitXsltPath)" OutputPaths="$(TestResultsDirectory)MSpec.Results.%(MSpecTestAssemblies.Filename).xml" Condition=" @(MSpecTestAssemblies) != '' And $(IncludeCoverage) == 'False' " />
+		<Delete Files="$(TestResultsDirectory)MSpecTemp.Results.%(MSpecTestAssemblies.Filename).xml" Condition=" @(MSpecTestAssemblies) != '' And $(IncludeCoverage) == 'False' " />
 		
+		<!-- run tests with coverage (https://github.com/sawilde/opencover/wiki/Usage) -->
+		<Exec Command="$(OpenCoverPath)OpenCover.Console.exe -register:user -returntargetcode -target:$(MSpecRunnerPath) -targetargs:&quot;--xml $(TestResultsDirectory)MSpecTemp.Results.%(MSpecTestAssemblies.Filename).xml @(MSpecTestAssemblies -> '%(Identity)', ' ')&quot; -filter:&quot;$(OpenCoverFilter)&quot; -output:$(CodeCoverageDirectory)MSpec.Coverage.%(MSpecTestAssemblies.Filename).xml" Condition=" @(MSpecTestAssemblies) != '' And $(IncludeCoverage) == 'True' " ContinueOnError="$(ContinueOnTestError)" />
+			
+			
+			
 		<!-- filter out test assemblies if Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll is not referenced -->
 		<ItemGroup>
 			<MSTestTestAssemblies Remove="@(MSTestTestAssemblies)" />
 			<MSTestTestAssemblies Include="%(TestAssemblies.FullPath)" Condition=" Exists('%(TestAssemblies.RelativeDir)Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll') " />
 		</ItemGroup>
 
-		<Exec Command="$(MSTestRunnerPath) /testcontainer:%(MSTestTestAssemblies.Identity) /resultsfile:$(TestResultsDirectory)MsTest.%(MSTestTestAssemblies.Filename).Results.xml /nologo" Condition=" @(MSTestTestAssemblies) != '' " IgnoreExitCode="$(ContinueOnTestError)" />
+		<!-- run tests if coverage is disabled -->
+		<Exec Command="$(MSTestRunnerPath) /testcontainer:%(MSTestTestAssemblies.Identity) /resultsfile:$(TestResultsDirectory)MsTest.%(MSTestTestAssemblies.Filename).Results.xml /nologo" Condition=" @(MSTestTestAssemblies) != '' And $(IncludeCoverage) == 'False' " IgnoreExitCode="$(ContinueOnTestError)" />
+
+		<!-- run tests with coverage (https://github.com/sawilde/opencover/wiki/Usage) -->
+		<Exec Command="$(OpenCoverPath)OpenCover.Console.exe -register:user -returntargetcode -target:$(MSTestRunnerPath) -targetargs:&quot;/testcontainer:%(MSTestTestAssemblies.Identity) /resultsfile:$(TestResultsDirectory)MsTest.%(MSTestTestAssemblies.Filename).Results.xml /nologo&quot; -filter:&quot;$(OpenCoverFilter)&quot; -output:$(CodeCoverageDirectory)MSTest.Coverage.%(MSTestTestAssemblies.Filename).xml" Condition=" @(MSTestTestAssemblies) != '' And $(IncludeCoverage) == 'True' " ContinueOnError="$(ContinueOnTestError)" />
+		
+		
+		<!-- convert coverage xml to html report (http://reportgenerator.codeplex.com/) -->
+		<Exec Command="&quot;$(ReportGeneratorPath)ReportGenerator.exe&quot; &quot;-reports:$(CodeCoverageDirectory)\*.xml&quot; &quot;-targetdir:$(CodeCoverageDirectory)\&quot; -reporttypes:Html;HtmlSummary" Condition=" ( @(NunitTestAssemblies) != '' Or @(MSpecTestAssemblies) != '' Or @(MSTestTestAssemblies) != '' ) And $(IncludeCoverage) == 'True' " />
 		
 	</Target>
 	
@@ -1070,7 +1077,7 @@
 		</PropertyGroup>
 
 		<!-- deploy data-tier application project (http://msdn.microsoft.com/en-us/library/hh550080(v=vs.103).aspx) -->
-		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="&quot;$(SqlServerRedistPath)\SqlPackage.exe&quot; /Action:Publish /SourceFile:&quot;$(DacPacPath)&quot; /TargetServerName:&quot;$(DeployServer)&quot; /TargetPassword:&quot;$(DeployPassword)&quot; /TargetUser:&quot;$(DeployUsername)&quot; /TargetDatabaseName:&quot;$(DeployTargetName)&quot; /p:AllowIncompatiblePlatform=True" Condition=" Exists('$(DacPacPath)') " />
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="&quot;$(SqlServerRedistPath)\SqlPackage.exe&quot; /Action:Publish /SourceFile:&quot;$(DacPacPath)&quot; /TargetServerName:&quot;$(DeployServer)&quot; /TargetPassword:&quot;$(DeployPassword)&quot; /TargetUser:&quot;$(DeployUsername)&quot; /TargetDatabaseName:&quot;$(DeployTargetName)&quot; /p:AllowIncompatiblePlatform=True /p:GenerateSmartDefaults=True" Condition=" Exists('$(DacPacPath)') " />
 		
 	</Target>
 
