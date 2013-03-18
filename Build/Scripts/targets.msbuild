@@ -1077,7 +1077,7 @@
 		</PropertyGroup>
 
 		<!-- deploy data-tier application project (http://msdn.microsoft.com/en-us/library/hh550080(v=vs.103).aspx) -->
-		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="&quot;$(SqlServerRedistPath)\SqlPackage.exe&quot; /Action:Publish /SourceFile:&quot;$(DacPacPath)&quot; /TargetServerName:&quot;$(DeployServer)&quot; /TargetPassword:&quot;$(DeployPassword)&quot; /TargetUser:&quot;$(DeployUsername)&quot; /TargetDatabaseName:&quot;$(DeployTargetName)&quot; /p:AllowIncompatiblePlatform=True /p:GenerateSmartDefaults=True" Condition=" Exists('$(DacPacPath)') " />
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="&quot;$(SqlServerRedistPath)\SqlPackage.exe&quot; /Action:Publish /SourceFile:&quot;$(DacPacPath)&quot; /TargetServerName:&quot;$(DeployServer)&quot; /TargetPassword:&quot;$(DeployPassword)&quot; /TargetUser:&quot;$(DeployUsername)&quot; /TargetDatabaseName:&quot;$(DeployTargetName)&quot; /p:AllowIncompatiblePlatform=$(DacDeployAllowIncompatiblePlatform) /p:GenerateSmartDefaults=$(DacDeployGenerateSmartDefaults) /p:BlockOnPossibleDataLoss=$(DacDeployBlockOnPossibleDataLoss)" Condition=" Exists('$(DacPacPath)') " />
 		
 	</Target>
 

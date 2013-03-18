@@ -26,7 +26,7 @@
 		
 		<!-- tool paths -->
 		<NUnitToolPath>$(BuildToolsDirectory)NUnit-2.6.0.12051\</NUnitToolPath>
-		<MSpecRunnerPath>$(BuildToolsDirectory)Machine.Specifications.0.5.7\tools\mspec-clr4.exe</MSpecRunnerPath>
+		<MSpecRunnerPath>$(BuildToolsDirectory)Machine.Specifications.0.5.11\tools\mspec-clr4.exe</MSpecRunnerPath>
 		<MSpecToJUnitXsltPath>$(BuildToolsDirectory)MSpecToJunitXslt\MSpecToJUnit.xslt</MSpecToJUnitXsltPath>
 		<MSTestRunnerPath>$(BuildToolsDirectory)MSTest.v11.0.50727.1\MSTest.exe</MSTestRunnerPath>
 		<MSBuildCommunityTasksDirectory>$(BuildToolsDirectory)MSBuildTasks.1.4.0.45\</MSBuildCommunityTasksDirectory>
@@ -52,7 +52,7 @@
 		<VisualStudioSqlServerDataToolsDir>$(VSToolsPath)SSDT\</VisualStudioSqlServerDataToolsDir>
 		<WebPublishingPath>$(VSToolsPath)Web\Microsoft.Web.Publishing.Tasks.dll</WebPublishingPath>
 		<SqlServerRedistPath>$(BuildToolsDirectory)SqlServerRedistPath</SqlServerRedistPath>
-		<OpenCoverPath>$(BuildToolsDirectory)OpenCover.4.0.804\</OpenCoverPath>
+		<OpenCoverPath>$(BuildToolsDirectory)OpenCover.4.0.1107\</OpenCoverPath>
 		<OpenCoverMSBuildTasksPath>$(OpenCoverPath)MSBuild\</OpenCoverMSBuildTasksPath>
 		<ReportGeneratorPath>$(BuildToolsDirectory)ReportGenerator.v1.6.1.0\</ReportGeneratorPath>		
 		<BuildVersionFilePath>$(ScriptsDirectory)buildversion.txt</BuildVersionFilePath>
@@ -93,6 +93,11 @@
 		<DeploySkipDirectoryPattern></DeploySkipDirectoryPattern>
 		<DeploySkipFilePattern></DeploySkipFilePattern>
 		<DeployDirectory></DeployDirectory>
+		
+		<!-- deploy dac properties -->
+		<DacDeployAllowIncompatiblePlatform>True</DacDeployAllowIncompatiblePlatform>
+		<DacDeployGenerateSmartDefaults>True</DacDeployGenerateSmartDefaults>
+		<DacDeployBlockOnPossibleDataLoss>True</DacDeployBlockOnPossibleDataLoss>
 		
 		<!-- deploy azure properties -->
 		<AzureSubscriptionID></AzureSubscriptionID>
