@@ -1221,7 +1221,7 @@
 			<!-- if none of the above exist, look for any solution -->
 			<_SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*.sln" Condition=" @(_SolutionsToAnalyze) == '' " />
 
-			<SolutionsToAnalyze Include="%(_SolutionsToAnalyze.FullPath)">
+			<SolutionsToAnalyze Include="%(_SolutionsToAnalyze.RelativeDir)%(_SolutionsToAnalyze.Filename)%(_SolutionsToAnalyze.Extension)">
 				<ProjectName>$(SonarProjectName)</ProjectName>
 				<ProjectName Condition=" '$(SonarProjectName)' == '' ">%(_SolutionsToAnalyze.Filename)</ProjectName>
 			</SolutionsToAnalyze>        
