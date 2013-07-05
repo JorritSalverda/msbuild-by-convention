@@ -1213,13 +1213,18 @@
 	<Target Name="AnalyzeWithSonar" DependsOnTargets="PrepareGlobalProperties;CompileCheck">
 				
 		<ItemGroup>		
-			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(WebsiteProjectConventionName).sln" />
-			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(WebServiceProjectConventionName).sln" />
-			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(ConsoleAppProjectConventionName).sln" />
-			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(WindowsServiceProjectConventionName).sln" />			
+			<_SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(WebsiteProjectConventionName).sln" />
+			<_SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(WebServiceProjectConventionName).sln" />
+			<_SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(ConsoleAppProjectConventionName).sln" />
+			<_SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*$(WindowsServiceProjectConventionName).sln" />			
 			
 			<!-- if none of the above exist, look for any solution -->
-			<SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*.sln" Condition=" @(SolutionsToAnalyze) == '' " />
+			<_SolutionsToAnalyze Include="$(CSharpSourceDirectory)**\*.sln" Condition=" @(_SolutionsToAnalyze) == '' " />
+
+			<SolutionsToAnalyze Include="%(_SolutionsToAnalyze.FullPath)">
+				<ProjectName>$(SonarProjectName)</ProjectName>
+				<ProjectName Condition=" '$(SonarProjectName)' == '' ">%(_SolutionsToAnalyze.Filename)</ProjectName>
+			</SolutionsToAnalyze>        
 			
 			<AssembliesToExludeFromCoverage Include="$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />			
 		</ItemGroup>
@@ -1230,7 +1235,7 @@
 			<SonarConnectionParameters Condition=" $(SonarProfile) != '' ">$(SonarConnectionParameters) -D sonar.profile=&quot;$(SonarProfile)&quot;</SonarConnectionParameters>
 		</PropertyGroup>
 	
-		<Exec Command="&quot;$(SonarRunnerPath)&quot; $(SonarConnectionParameters) -D sonar.projectVersion=$(BuildVersion) -D sonar.projectKey=%(SolutionsToAnalyze.Filename) -D sonar.projectName=%(SolutionsToAnalyze.Filename) -D sonar.language=cs -D sonar.dotnet.buildConfigurations=$(Configuration) -D sonar.dotnet.visualstudio.solution.file=%(SolutionsToAnalyze.RelativeDir)%(SolutionsToAnalyze.Filename)%(SolutionsToAnalyze.Extension) -D csharp.sonar.projectBaseDir=%(SolutionsToAnalyze.RelativeDir) -D sonar.gallio.installDirectory=$(GallioPath) -D sonar.gallio.coverage.tool=OpenCover -D sonar.opencover.installDirectory=$(OpenCoverPath) -D sonar.dotnet.visualstudio.testProjectPattern=*$(UnitTestsProjectConventionName)*;*$(IntegrationTestsProjectConventionName)* -D sonar.gallio.coverage.excludes=&quot;$(ExcludeFromCoverage)&quot;" Condition=" $(SkipAnalysis) == 'False' " />
+		<Exec Command="&quot;$(SonarRunnerPath)&quot; $(SonarConnectionParameters) -D sonar.projectVersion=$(BuildVersion) -D sonar.projectKey=%(SolutionsToAnalyze.Filename) -D sonar.projectName=%(SolutionsToAnalyze.ProjectName) -D sonar.language=cs -D sonar.dotnet.buildConfigurations=$(Configuration) -D sonar.dotnet.visualstudio.solution.file=%(SolutionsToAnalyze.RelativeDir)%(SolutionsToAnalyze.Filename)%(SolutionsToAnalyze.Extension) -D csharp.sonar.projectBaseDir=%(SolutionsToAnalyze.RelativeDir) -D sonar.gallio.installDirectory=$(GallioPath) -D sonar.gallio.coverage.tool=OpenCover -D sonar.opencover.installDirectory=$(OpenCoverPath) -D sonar.dotnet.visualstudio.testProjectPattern=*$(UnitTestsProjectConventionName)*;*$(IntegrationTestsProjectConventionName)* -D sonar.gallio.coverage.excludes=&quot;$(ExcludeFromCoverage)&quot;" Condition=" $(SkipAnalysis) == 'False' " />
 		
 	</Target>
 

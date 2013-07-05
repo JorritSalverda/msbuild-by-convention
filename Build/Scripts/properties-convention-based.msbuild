@@ -118,6 +118,7 @@
 		<SonarDbUsername></SonarDbUsername>
 		<SonarDbPassword></SonarDbPassword>
 		<SonarProfile Condition=" '$(SonarProfile)' == '' "></SonarProfile>
+		<SonarProjectName></SonarProjectName>
 		
 		<!-- yslow test properties -->
 		<YSlowTestUrl></YSlowTestUrl>
