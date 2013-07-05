@@ -31,7 +31,7 @@
 		<MSTestRunnerPath>$(BuildToolsDirectory)MSTest.v11.0.50727.1\MSTest.exe</MSTestRunnerPath>
 		<MSBuildCommunityTasksDirectory>$(BuildToolsDirectory)MSBuildTasks.1.4.0.45\</MSBuildCommunityTasksDirectory>
 		<MSBuildCommunityTasksPath>$(MSBuildCommunityTasksDirectory)MSBuild.Community.Tasks.dll</MSBuildCommunityTasksPath>
-		<YUICompressorPath>$(BuildToolsDirectory)YUICompressor.NET.MSBuild.2.0.0.0\</YUICompressorPath>
+		<YUICompressorPath>$(BuildToolsDirectory)Yahoo.Yui.Compressor.v2.2.0.0\</YUICompressorPath>
 		<ExtensionTasksPath>$(BuildToolsDirectory)MSBuild.ExtensionPack.Binaries.v4.0.2.0\MSBuild.ExtensionPack.dll</ExtensionTasksPath>
 		<FxCopPath>$(BuildToolsDirectory)FxCop.v10.0\</FxCopPath>
 		<MsDeployDirectory>$(BuildToolsDirectory)MsDeploy.v2\</MsDeployDirectory>
@@ -56,7 +56,7 @@
 		<OpenCoverMSBuildTasksPath>$(OpenCoverPath)MSBuild\</OpenCoverMSBuildTasksPath>
 		<ReportGeneratorPath>$(BuildToolsDirectory)ReportGenerator.v1.6.1.0\</ReportGeneratorPath>		
 		<BuildVersionFilePath>$(ScriptsDirectory)buildversion.txt</BuildVersionFilePath>
-		<SonarRunnerPath>$(BuildToolsDirectory)sonar-runner-2.0\bin\sonar-runner.bat</SonarRunnerPath>
+		<SonarRunnerPath>$(BuildToolsDirectory)sonar-runner-2.2.1\bin\sonar-runner.bat</SonarRunnerPath>
 		<GallioPath>$(BuildToolsDirectory)GallioBundle-3.4.14.0\</GallioPath>
 		<PhantomJsPath>$(BuildToolsDirectory)phantomjs-1.8.0-windows\phantomjs.exe</PhantomJsPath>
 		<YSlowPath>$(BuildToolsDirectory)yslow-phantomjs-3.1.1\yslow.js</YSlowPath>
@@ -93,11 +93,11 @@
 		<DeploySkipDirectoryPattern></DeploySkipDirectoryPattern>
 		<DeploySkipFilePattern></DeploySkipFilePattern>
 		<DeployDirectory></DeployDirectory>
-		
+      
 		<!-- deploy dac properties -->
 		<DacDeployAllowIncompatiblePlatform>True</DacDeployAllowIncompatiblePlatform>
 		<DacDeployGenerateSmartDefaults>True</DacDeployGenerateSmartDefaults>
-		<DacDeployBlockOnPossibleDataLoss>True</DacDeployBlockOnPossibleDataLoss>
+		<DacDeployBlockOnPossibleDataLoss>True</DacDeployBlockOnPossibleDataLoss>     
 		
 		<!-- deploy azure properties -->
 		<AzureSubscriptionID></AzureSubscriptionID>

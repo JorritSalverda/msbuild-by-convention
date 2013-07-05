@@ -13,7 +13,8 @@
 	
 	<!-- override conventions if you want to deviate from the default ones -->	
 	<PropertyGroup>
-		<!--<DependencyDirectory>$(BaseDirectory)source\lib\</DependencyDirectory>-->
+		<UseVersionedFiles>False</UseVersionedFiles>
+		<CheckJavascriptOnBuild>True</CheckJavascriptOnBuild>
 	</PropertyGroup>	
 
 </Project>
