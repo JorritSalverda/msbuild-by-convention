@@ -1075,7 +1075,7 @@
 		<Unzip ZipFileName="%(DatabasesToDeploy.FullPath)" TargetDirectory="%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)$(ProjectToDeploy)" />						
 
 		<PropertyGroup>
-			<DacPacPath>%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)$(ProjectToDeploy)$(ProjectToDeploy).dacpac</DacPacPath>
+			<DacPacPath>%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)$(ProjectToDeploy)\$(ProjectToDeploy).dacpac</DacPacPath>
 		</PropertyGroup>
 
 		<!-- deploy data-tier application project (http://msdn.microsoft.com/en-us/library/hh550080(v=vs.103).aspx) -->
