@@ -35,7 +35,8 @@
 		</ConvertToAbsolutePath>		
 		
 		<PropertyGroup>
-			<BuildParameters>$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);SqlServerRedistPath=$(AbsoluteSqlServerRedistPath);VSToolsPath=$(AbsoluteVSToolsPath);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory);SqlServerRedistPath=$(AbsoluteSqlServerRedistPath);SsdtTargetsParentPath=$(AbsoluteVisualStudioSqlServerDataToolsDir);CommonTargetsExtensionFile=$(AbsoluteCommonTargetsExtensionFile)</BuildParameters>
+			<BuildParameters>$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);VSToolsPath=$(AbsoluteVSToolsPath);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory);SsdtTargetsParentPath=$(AbsoluteVisualStudioSqlServerDataToolsDir);CommonTargetsExtensionFile=$(AbsoluteCommonTargetsExtensionFile)</BuildParameters>
+			<BuildParameters Condition=" $(ReplaceSsdtImportStatement) == 'True' ">$(BuildParameters);SqlServerRedistPath=$(AbsoluteSqlServerRedistPath)</BuildParameters>			
 			<VersionedFilePostfix Condition=" '$(UseVersionedFiles)' == 'True' ">-$(BuildVersion)</VersionedFilePostfix>
 		</PropertyGroup>
 			
