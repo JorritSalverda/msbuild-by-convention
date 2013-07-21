@@ -70,10 +70,10 @@
 	</Target>
 
 	<Target Name="ReplaceProjectImportStatements" Condition=" Exists('$(VisualStudioSqlServerDataToolsDir)Microsoft.Data.Tools.Schema.SqlTasks.targets') ">
-		<!-- look for sqlproj files and replace the import statement with one pointing to /build/tools/VisualStudio.v11.0.SSDT -->
+		<!-- look for sqlproj files and replace the import statement with one pointing to /build/tools/VisualStudio.v11.0/SSDT -->
 		<ItemGroup>
 			<DbProjectFiles Remove="@(DbProjectFiles)" />
-			<DbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).sqlproj" />
+			<DbProjectFiles Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).sqlproj" Condition=" $(ReplaceSsdtImportStatement) == 'True' " />
 		</ItemGroup>
 		
 		<!-- keep backup of the project file -->

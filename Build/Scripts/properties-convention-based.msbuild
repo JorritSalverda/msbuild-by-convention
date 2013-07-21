@@ -26,7 +26,7 @@
 		
 		<!-- tool paths -->
 		<NUnitToolPath>$(BuildToolsDirectory)NUnit-2.6.0.12051\</NUnitToolPath>
-		<MSpecRunnerPath>$(BuildToolsDirectory)Machine.Specifications.0.5.11\tools\mspec-clr4.exe</MSpecRunnerPath>
+		<MSpecRunnerPath>$(BuildToolsDirectory)Machine.Specifications.0.5.12\tools\mspec-clr4.exe</MSpecRunnerPath>
 		<MSpecToJUnitXsltPath>$(BuildToolsDirectory)MSpecToJunitXslt\MSpecToJUnit.xslt</MSpecToJUnitXsltPath>
 		<MSTestRunnerPath>$(BuildToolsDirectory)MSTest.v11.0.50727.1\MSTest.exe</MSTestRunnerPath>
 		<MSBuildCommunityTasksDirectory>$(BuildToolsDirectory)MSBuildTasks.1.4.0.45\</MSBuildCommunityTasksDirectory>
@@ -82,6 +82,7 @@
 		<CopyDependenciesToBinFolder Condition=" '$(CopyDependenciesToBinFolder)' == '' ">False</CopyDependenciesToBinFolder>
 		<CheckJavascriptOnBuild Condition=" '$(CheckJavascriptOnBuild)' == '' ">False</CheckJavascriptOnBuild>
 		<SkipAnalysis Condition=" '$(SkipAnalysis)' == '' ">False</SkipAnalysis>
+		<ReplaceSsdtImportStatement Condition=" '$(ReplaceSsdtImportStatement)' == '' ">False</ReplaceSsdtImportStatement>
 		
 		<!-- deploy properties -->
 		<ProjectToDeploy></ProjectToDeploy>	
