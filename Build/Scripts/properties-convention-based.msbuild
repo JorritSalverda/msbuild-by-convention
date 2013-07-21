@@ -83,6 +83,7 @@
 		<CheckJavascriptOnBuild Condition=" '$(CheckJavascriptOnBuild)' == '' ">False</CheckJavascriptOnBuild>
 		<SkipAnalysis Condition=" '$(SkipAnalysis)' == '' ">False</SkipAnalysis>
 		<ReplaceSsdtImportStatement Condition=" '$(ReplaceSsdtImportStatement)' == '' ">False</ReplaceSsdtImportStatement>
+		<UseIncludedAzureSdkTargets Condition=" '$(UseIncludedAzureSdkTargets)' == '' ">False</UseIncludedAzureSdkTargets>
 		
 		<!-- deploy properties -->
 		<ProjectToDeploy></ProjectToDeploy>	

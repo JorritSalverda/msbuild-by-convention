@@ -35,8 +35,9 @@
 		</ConvertToAbsolutePath>		
 		
 		<PropertyGroup>
-			<BuildParameters>$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);VSToolsPath=$(AbsoluteVSToolsPath);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory);SsdtTargetsParentPath=$(AbsoluteVisualStudioSqlServerDataToolsDir);CommonTargetsExtensionFile=$(AbsoluteCommonTargetsExtensionFile)</BuildParameters>
+			<BuildParameters>$(BuildParameters);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);VSToolsPath=$(AbsoluteVSToolsPath);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory);SsdtTargetsParentPath=$(AbsoluteVisualStudioSqlServerDataToolsDir);CommonTargetsExtensionFile=$(AbsoluteCommonTargetsExtensionFile)</BuildParameters>
 			<BuildParameters Condition=" $(ReplaceSsdtImportStatement) == 'True' ">$(BuildParameters);SqlServerRedistPath=$(AbsoluteSqlServerRedistPath)</BuildParameters>			
+			<BuildParameters Condition=" $(UseIncludedAzureSdkTargets) == 'True' ">$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir)</BuildParameters>						
 			<VersionedFilePostfix Condition=" '$(UseVersionedFiles)' == 'True' ">-$(BuildVersion)</VersionedFilePostfix>
 		</PropertyGroup>
 			
@@ -564,7 +565,7 @@
 			</ProjectsToRelease>
 			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).sqlproj">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
-				<FilesToCopyForReleasePattern>sql\$(Configuration)\*</FilesToCopyForReleasePattern>
+				<FilesToCopyForReleasePattern>bin\$(Configuration)\*</FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
 		</ItemGroup>			
 	</Target>
@@ -1074,7 +1075,7 @@
 		<Unzip ZipFileName="%(DatabasesToDeploy.FullPath)" TargetDirectory="%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)$(ProjectToDeploy)" />						
 
 		<PropertyGroup>
-			<DacPacPath>%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)$(ProjectToDeploy)\$(ProjectToDeploy).dacpac</DacPacPath>
+			<DacPacPath>%(DatabasesToDeploy.RootDir)%(DatabasesToDeploy.Directory)$(ProjectToDeploy)$(ProjectToDeploy).dacpac</DacPacPath>
 		</PropertyGroup>
 
 		<!-- deploy data-tier application project (http://msdn.microsoft.com/en-us/library/hh550080(v=vs.103).aspx) -->
