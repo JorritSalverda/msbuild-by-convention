@@ -89,8 +89,8 @@
 	<Target Name="Compile" DependsOnTargets="Clean;CopyDependencies;SetAssemblyFileVersion;ReplaceProjectImportStatements;BeforeCompile;CoreCompile;AfterCompile" />
 	<Target Name="BeforeCompile">
 	
-		<CallTarget Targets="CheckJavascriptWithJsHint" Condition=" $(CheckJavascriptOnBuild) == 'True' " />
-	
+		<CallTarget Targets="CheckJavascriptWithJsHint" Condition=" $(CheckJavascriptOnBuild) == 'True' " />      
+   
 		<!-- solutions that have a dependency order are specified in properties-repository-specific.msbuild; over here we add all solutions so it's not neccessary to list them all in properties-repository-specific.msbuild -->
 		<ItemGroup>
 			<SolutionsToBuild Include="$(CSharpSourceDirectory)**\*.sln" />
@@ -102,6 +102,9 @@
     <Target Name="CoreCompile" Inputs="%(SolutionsToBuild.RootDir)%(SolutionsToBuild.Directory)" Outputs="NonExistingOutputToTriggerTargetForEverySolution">
 		<Error Text="There are no solutions to compile!" Condition=" @(SolutionsToBuild) == '' " />
 
+      <!-- restore nuget packages -->
+      <Exec Command="$(NuGetPath) restore %(SolutionsToBuild.FullPath)" />      
+      
 		<!-- build solution -->
 		<MSBuild Projects="%(SolutionsToBuild.FullPath)" Targets="$(CompileTarget)" Properties="$(BuildParameters)" BuildInParallel="true">
 			<Output TaskParameter="TargetOutputs" ItemName="BuildOutput" />
@@ -160,6 +163,43 @@
 		<Exec Command="cscript &quot;$(JSHintPath)&quot; %(JavaScriptFiles.RelativeDir)%(JavaScriptFiles.Filename)%(JavaScriptFiles.Extension)" />		
 		
 	</Target>	
+   
+   <Target Name="InstallNodePackages" DependsOnTargets="BeforeInstallNodePackages;CoreInstallNodePackages" />
+	<Target Name="BeforeInstallNodePackages">   
+		<ItemGroup>
+			<PackageJsonFiles Remove="@(PackageJsonFiles)" />
+			<PackageJsonFiles Include="$(SourceDirectory)**\packag*.json" />
+			<PackageJsonFiles Remove="$(SourceDirectory)**\node_modules\**\packag*.json" />
+		</ItemGroup>         
+	</Target>
+	<Target Name="CoreInstallNodePackages" Inputs="%(PackageJsonFiles.RootDir)%(PackageJsonFiles.Directory)" Outputs="AlwaysExecute">
+   
+		<ConvertToAbsolutePath Paths="%(PackageJsonFiles.RootDir)%(PackageJsonFiles.Directory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="PackageJsonFileLocation" />
+		</ConvertToAbsolutePath>
+          
+      <Exec Command="npm install"  WorkingDirectory="$(PackageJsonFileLocation)" />   
+      
+	</Target>
+   
+   <Target Name="RunGruntFiles" DependsOnTargets="InstallNodePackages;BeforeRunGruntFiles;CoreRunGruntFiles" />
+	<Target Name="BeforeRunGruntFiles">    
+		<ItemGroup>
+			<GruntFiles Remove="@(GruntFiles)" />
+			<GruntFiles Include="$(SourceDirectory)**\gruntfil*.js" />
+			<GruntFiles Remove="$(SourceDirectory)**\node_modules\**\gruntfil*.js" />
+		</ItemGroup>         
+	</Target>
+	<Target Name="CoreRunGruntFile" Inputs="%(GruntFiles.RootDir)%(GruntFiles.Directory)" Outputs="AlwaysExecute">
+
+		<ConvertToAbsolutePath Paths="%(GruntFiles.RootDir)%(GruntFiles.Directory)">
+			<Output TaskParameter="AbsolutePaths" PropertyName="GruntFileLocation" />
+		</ConvertToAbsolutePath>  
+   
+      <Exec Command="grunt" WorkingDirectory="$(GruntFileLocation)" />
+      
+	</Target>  
+   
 	
 	<Target Name="CompileCheck">
 		
@@ -303,13 +343,13 @@
 	<Target Name="BeforeMinifyJavaScript">
 		<!-- remove previously minified javascript -->
 		<ItemGroup>
-			<OldJavaScriptFiles Include="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\*.min.js" />
+			<OldJavaScriptFiles Include="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\*.min.js" Condition=" $(MinifyJavascript) == 'True' " />
 		</ItemGroup>
 		<Delete Files="@(OldJavaScriptFiles)" />
 
 		<ItemGroup>
 			<JavaScriptFiles Remove="@(JavaScriptFiles)" />
-			<JavaScriptFiles Include="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\**\*.js" Exclude="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\*.min.js" />
+			<JavaScriptFiles Include="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\**\*.js" Exclude="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\*.min.js" Condition=" $(MinifyJavascript) == 'True' " />
 			<!-- do not include js files in the js 'root'; put your code in subdirs -->
 			<JavaScriptFiles Remove="$(SourceDirectory)**\$(JavascriptDirectoryConventionName)\*.js" />
 		</ItemGroup>
@@ -341,13 +381,13 @@
 	<Target Name="BeforeMinifyCss">
 		<!-- remove previously minified css -->
 		<ItemGroup>
-			<OldCssFiles Include="$(SourceDirectory)**\$(CssDirectoryConventionName)\**\*.min.css" />
+			<OldCssFiles Include="$(SourceDirectory)**\$(CssDirectoryConventionName)\**\*.min.css" Condition=" $(MinifyCss) == 'True' " />
 		</ItemGroup>
 		<Delete Files="@(OldCssFiles)" />
 
 		<ItemGroup>
 			<CssFiles Remove="@(CssFiles)" />
-			<CssFiles Include="$(SourceDirectory)**\$(CssDirectoryConventionName)\**\*.css" Exclude="$(SourceDirectory)**\$(CssDirectoryConventionName)\**\*.min.css" />
+			<CssFiles Include="$(SourceDirectory)**\$(CssDirectoryConventionName)\**\*.css" Exclude="$(SourceDirectory)**\$(CssDirectoryConventionName)\**\*.min.css" Condition=" $(MinifyCss) == 'True' " />
 			<!-- do not include css files in the css 'root'; put your code in subdirs (it should only contain stuff like _constants.scss) -->
 			<CssFiles Remove="$(SourceDirectory)**\$(CssDirectoryConventionName)\*.css" />
 		</ItemGroup>
@@ -565,7 +605,7 @@
 			</ProjectsToRelease>
 			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).sqlproj">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
-				<FilesToCopyForReleasePattern>bin\$(Configuration)\*</FilesToCopyForReleasePattern>
+				<FilesToCopyForReleasePattern>sql\$(Configuration)\*</FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
 		</ItemGroup>			
 	</Target>
@@ -1175,11 +1215,27 @@
 		
 	</Target>
 
+	<Target Name="DeleteDatabase" DependsOnTargets="BeforeDeleteDatabase;CoreDeleteDatabase" />
+	<Target Name="BeforeDeleteDatabase">
+		<ItemGroup>
+			<_DatabaseToDelete Include="$(SourceDirectory)**\*.$(DatabaseProjectConventionName).sqlproj" />
+			<DatabaseToDelete Include="@(_DatabaseToDelete)" Condition = " %(_DatabaseToDelete.Filename) == $(ProjectToDelete) " />
+		</ItemGroup>
+	</Target>
+	<Target Name="CoreDeleteDatabase" Inputs="%(DatabaseToDelete.RootDir)%(DatabaseToDelete.Directory)" Outputs="AlwaysExecute">
+		<!-- call targets 'Delete' with parameters 'ProjectToDelete=<database project filename without extension>;AzureSubscriptionID=<AzureSubscriptionID>;AzureCertificateFilename=<AzureCertificateFilename>;AzureCertificatePassword=<AzureCertificatePassword>;DeployServer=<DeployServer>;DeployTargetName=<DeployTargetName>;DeployUsername=<DeployUsername>;DeployPassword=<DeployPassword>' -->
+		
+		<!-- https://www.windowsazure.com/en-us/develop/net/common-tasks/continuous-delivery/ -->
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="$(PowershellPath) -f $(AzureDatabaseDeleteScript) -serverName $(DeployServer) -databaseName $(DeployTargetName) -certificateFilename $(AzureCertificateFilename) -certificatePassword $(AzureCertificatePassword) -subscriptionid $(AzureSubscriptionID) -username $(DeployUsername) -password $(DeployPassword)" />	
+		
+	</Target>
+
 	<Target Name="AfterDelete">
 
 		<ItemGroup>
 			<AllProjectsToDelete Remove="@(AllProjectsToDelete)" />
 			<AllProjectsToDelete Include="@(AzureToDelete)" />
+			<AllProjectsToDelete Include="@(DatabaseToDelete)" />
 		</ItemGroup>
 
 		<PropertyGroup>
@@ -1271,13 +1327,13 @@
     <Target Name="BuildAndRunIntegrationTests" DependsOnTargets="Build;RunIntegrationTests" />
     <Target Name="BuildAndRunAllTests" DependsOnTargets="Build;RunUnitTests;RunIntegrationTests" />
 
-    <Target Name="Minify" DependsOnTargets="PrepareGlobalProperties;MinifyJavaScript;MinifyCss" />
+   <Target Name="Minify" DependsOnTargets="PrepareGlobalProperties;MinifyJavaScript;MinifyCss;RunGruntFiles" />
 	<Target Name="PublishAssets" DependsOnTargets="PublishFlash" />
 	<Target Name="Release" DependsOnTargets="PrepareGlobalProperties;CompileCheck;CreateDirectories;BeforeRelease;Minify;PublishAssets;ReleaseWebsites;ReleaseWebServices;ReleaseConsoleApps;ReleaseServices;ReleaseDatabases;ReleaseWorkers;ReleaseStaticHtml;CoreRelease;ReleaseAzure;ReleaseNugetPackages;AfterRelease" />
 	<Target Name="BuildAndRunUnitTestsAndRelease" DependsOnTargets="BeforeRelease;BuildAndRunUnitTests;Release" />
 
 	<Target Name="Deploy" DependsOnTargets="PrepareGlobalProperties;DeployWebsite;DeployWebService;DeployStaticHtml;CoreMsDeployDeploy;DeployConsoleApp;DeployService;DeployDatabase;DeployAzure;DeployNugetPackages;AfterDeploy" />
-	<Target Name="Delete" DependsOnTargets="DeleteAzure;AfterDeploy" />
+	<Target Name="Delete" DependsOnTargets="DeleteAzure;DeleteDatabase;AfterDelete" />
 
 	<!-- endregion Targets to use from outside -->	
 	

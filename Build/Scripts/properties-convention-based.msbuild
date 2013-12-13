@@ -36,11 +36,12 @@
 		<FxCopPath>$(BuildToolsDirectory)FxCop.v10.0\</FxCopPath>
 		<MsDeployDirectory>$(BuildToolsDirectory)MsDeploy.v2\</MsDeployDirectory>
 		<MsDeployPath>$(MsDeployDirectory)msdeploy.exe</MsDeployPath>
-		<CloudExtensionsDir>$(BuildToolsDirectory)Windows.Azure.Tools.v1.8\</CloudExtensionsDir>
+		<CloudExtensionsDir>$(BuildToolsDirectory)Windows.Azure.Tools.v2.1\</CloudExtensionsDir>
 		<CommonTargetsExtensionFile>$(BuildToolsDirectory)Microsoft.Common.targets\Microsoft.WindowsAzure.Common.targets</CommonTargetsExtensionFile>
 		<PowershellPath>$(windir)\system32\WindowsPowerShell\v1.0\powershell.exe</PowershellPath>
 		<AzureDeployScript>AzureDeploy.ps1</AzureDeployScript>
 		<AzureDeleteScript>AzureDelete.ps1</AzureDeleteScript>
+    <AzureDatabaseDeleteScript>AzureDbDelete.ps1</AzureDatabaseDeleteScript>
 		<FlexSdkPath>$(BuildToolsDirectory)flex_sdk_4.5.1.21328\bin\mxmlc.exe</FlexSdkPath>
 		<DacDeployScript>DacDeploy.ps1</DacDeployScript>
 		<SqlPowershellDirectory>$(BuildToolsDirectory)SqlPowershell-10.50.1600.1\</SqlPowershellDirectory>
@@ -61,7 +62,7 @@
 		<PhantomJsPath>$(BuildToolsDirectory)phantomjs-1.8.0-windows\phantomjs.exe</PhantomJsPath>
 		<YSlowPath>$(BuildToolsDirectory)yslow-phantomjs-3.1.1\yslow.js</YSlowPath>
 		<JSHintPath>$(BuildToolsDirectory)jshint-r12\env\wsh.js</JSHintPath>
-		<NuGetPath>$(BuildToolsDirectory)NuGet.v2.2.0\NuGet.exe</NuGetPath>
+		<NuGetPath>$(BuildToolsDirectory)NuGet\NuGet.exe</NuGetPath>
 		
 		<!-- other properties -->
 		<BuildVersion Condition=" '$(BuildVersion)' == '' ">$(build_number)</BuildVersion>
@@ -84,6 +85,8 @@
 		<SkipAnalysis Condition=" '$(SkipAnalysis)' == '' ">False</SkipAnalysis>
 		<ReplaceSsdtImportStatement Condition=" '$(ReplaceSsdtImportStatement)' == '' ">False</ReplaceSsdtImportStatement>
 		<UseIncludedAzureSdkTargets Condition=" '$(UseIncludedAzureSdkTargets)' == '' ">False</UseIncludedAzureSdkTargets>
+      <MinifyJavascript Condition=" '$(MinifyJavascript)' == '' ">True</MinifyJavascript>
+      <MinifyCss Condition=" '$(MinifyCss)' == '' ">True</MinifyCss>
 		
 		<!-- deploy properties -->
 		<ProjectToDeploy></ProjectToDeploy>	
