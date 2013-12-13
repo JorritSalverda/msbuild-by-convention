@@ -190,7 +190,7 @@
 			<GruntFiles Remove="$(SourceDirectory)**\node_modules\**\gruntfil*.js" />
 		</ItemGroup>         
 	</Target>
-	<Target Name="CoreRunGruntFile" Inputs="%(GruntFiles.RootDir)%(GruntFiles.Directory)" Outputs="AlwaysExecute">
+	<Target Name="CoreRunGruntFiles" Inputs="%(GruntFiles.RootDir)%(GruntFiles.Directory)" Outputs="AlwaysExecute">
 
 		<ConvertToAbsolutePath Paths="%(GruntFiles.RootDir)%(GruntFiles.Directory)">
 			<Output TaskParameter="AbsolutePaths" PropertyName="GruntFileLocation" />
