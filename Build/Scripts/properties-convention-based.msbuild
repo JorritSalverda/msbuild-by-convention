@@ -25,27 +25,26 @@
 		<JMeterTestsDirectory>$(IntegrationTestsDirectory)JMeterTests\</JMeterTestsDirectory>
 		
 		<!-- tool paths -->
-		<NUnitToolPath>$(BuildToolsDirectory)NUnit-2.6.0.12051\</NUnitToolPath>
-		<MSpecRunnerPath>$(BuildToolsDirectory)Machine.Specifications.0.5.12\tools\mspec-clr4.exe</MSpecRunnerPath>
+		<NUnitToolPath>$(BuildToolsDirectory)NUnit.Runners.2.6.3\tools\</NUnitToolPath>
+		<MSpecRunnerPath>$(BuildToolsDirectory)Machine.Specifications.0.6.0\tools\mspec-clr4.exe</MSpecRunnerPath>
 		<MSpecToJUnitXsltPath>$(BuildToolsDirectory)MSpecToJunitXslt\MSpecToJUnit.xslt</MSpecToJUnitXsltPath>
 		<MSTestRunnerPath>$(BuildToolsDirectory)MSTest.v11.0.50727.1\MSTest.exe</MSTestRunnerPath>
-		<MSBuildCommunityTasksDirectory>$(BuildToolsDirectory)MSBuildTasks.1.4.0.45\</MSBuildCommunityTasksDirectory>
+		<MSBuildCommunityTasksDirectory>$(BuildToolsDirectory)MSBuildTasks.1.4.0.65\tools\</MSBuildCommunityTasksDirectory>
 		<MSBuildCommunityTasksPath>$(MSBuildCommunityTasksDirectory)MSBuild.Community.Tasks.dll</MSBuildCommunityTasksPath>
-		<YUICompressorPath>$(BuildToolsDirectory)Yahoo.Yui.Compressor.v2.2.0.0\</YUICompressorPath>
-		<ExtensionTasksPath>$(BuildToolsDirectory)MSBuild.ExtensionPack.Binaries.v4.0.2.0\MSBuild.ExtensionPack.dll</ExtensionTasksPath>
+		<YUICompressorPath>$(BuildToolsDirectory)YUICompressor.NET.MSBuild.2.3.0.0\lib\NET20\</YUICompressorPath>
+		<ExtensionTasksPath>$(BuildToolsDirectory)MSBuild.Extension.Pack.1.3.0\tools\net40\MSBuild.ExtensionPack.dll</ExtensionTasksPath>
 		<FxCopPath>$(BuildToolsDirectory)FxCop.v10.0\</FxCopPath>
 		<MsDeployDirectory>$(BuildToolsDirectory)MsDeploy.v2\</MsDeployDirectory>
 		<MsDeployPath>$(MsDeployDirectory)msdeploy.exe</MsDeployPath>
-		<CloudExtensionsDir>$(BuildToolsDirectory)Windows.Azure.Tools.v2.1\</CloudExtensionsDir>
+		<CloudExtensionsDir>$(BuildToolsDirectory)Windows.Azure.Tools.v2.2\</CloudExtensionsDir>
 		<CommonTargetsExtensionFile>$(BuildToolsDirectory)Microsoft.Common.targets\Microsoft.WindowsAzure.Common.targets</CommonTargetsExtensionFile>
 		<PowershellPath>$(windir)\system32\WindowsPowerShell\v1.0\powershell.exe</PowershellPath>
 		<AzureDeployScript>AzureDeploy.ps1</AzureDeployScript>
 		<AzureDeleteScript>AzureDelete.ps1</AzureDeleteScript>
-    <AzureDatabaseDeleteScript>AzureDbDelete.ps1</AzureDatabaseDeleteScript>
+		<AzureSwapScript>AzureSwap.ps1</AzureSwapScript>
+      <AzureDatabaseDeleteScript>AzureDbDelete.ps1</AzureDatabaseDeleteScript>
 		<FlexSdkPath>$(BuildToolsDirectory)flex_sdk_4.5.1.21328\bin\mxmlc.exe</FlexSdkPath>
 		<DacDeployScript>DacDeploy.ps1</DacDeployScript>
-		<SqlPowershellDirectory>$(BuildToolsDirectory)SqlPowershell-10.50.1600.1\</SqlPowershellDirectory>
-		<SqlPowershellPath>$(SqlPowershellDirectory)SQLPS.exe</SqlPowershellPath>
 		<JMeterToolPath>$(BuildToolsDirectory)apache-jmeter-2.6\bin\jmeter</JMeterToolPath>
 		<JpegtranPath>$(BuildToolsDirectory)Jpegtran\jpegtran.exe</JpegtranPath>
 		<OptiPngPath>$(BuildToolsDirectory)optipng-0.7.1-win32\optipng.exe</OptiPngPath>
@@ -53,13 +52,13 @@
 		<VisualStudioSqlServerDataToolsDir>$(VSToolsPath)SSDT\</VisualStudioSqlServerDataToolsDir>
 		<WebPublishingPath>$(VSToolsPath)Web\Microsoft.Web.Publishing.Tasks.dll</WebPublishingPath>
 		<SqlServerRedistPath>$(BuildToolsDirectory)SqlServerRedistPath</SqlServerRedistPath>
-		<OpenCoverPath>$(BuildToolsDirectory)OpenCover.4.0.1107\</OpenCoverPath>
+		<OpenCoverPath>$(BuildToolsDirectory)OpenCover.4.5.2316\</OpenCoverPath>
 		<OpenCoverMSBuildTasksPath>$(OpenCoverPath)MSBuild\</OpenCoverMSBuildTasksPath>
-		<ReportGeneratorPath>$(BuildToolsDirectory)ReportGenerator.v1.6.1.0\</ReportGeneratorPath>		
+		<ReportGeneratorPath>$(BuildToolsDirectory)ReportGenerator.1.9.1.0\</ReportGeneratorPath>		
 		<BuildVersionFilePath>$(ScriptsDirectory)buildversion.txt</BuildVersionFilePath>
-		<SonarRunnerPath>$(BuildToolsDirectory)sonar-runner-2.2.1\bin\sonar-runner.bat</SonarRunnerPath>
-		<GallioPath>$(BuildToolsDirectory)GallioBundle-3.4.14.0\</GallioPath>
-		<PhantomJsPath>$(BuildToolsDirectory)phantomjs-1.8.0-windows\phantomjs.exe</PhantomJsPath>
+		<SonarRunnerPath>$(BuildToolsDirectory)SonarRunner.2.3\bin\sonar-runner.bat</SonarRunnerPath>
+		<GallioPath>$(BuildToolsDirectory)GallioBundle.3.4.14.0\</GallioPath>
+		<PhantomJsPath>$(BuildToolsDirectory)phantomjs.exe.1.9.2\tools\phantomjs\phantomjs.exe</PhantomJsPath>
 		<YSlowPath>$(BuildToolsDirectory)yslow-phantomjs-3.1.1\yslow.js</YSlowPath>
 		<JSHintPath>$(BuildToolsDirectory)jshint-r12\env\wsh.js</JSHintPath>
 		<NuGetPath>$(BuildToolsDirectory)NuGet\NuGet.exe</NuGetPath>

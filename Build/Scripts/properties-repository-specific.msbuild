@@ -15,6 +15,7 @@
 	<PropertyGroup>
 		<UseVersionedFiles>False</UseVersionedFiles>
 		<CheckJavascriptOnBuild>True</CheckJavascriptOnBuild>
+		<UseIncludedAzureSdkTargets>True</UseIncludedAzureSdkTargets>
 	</PropertyGroup>	
 
 </Project>

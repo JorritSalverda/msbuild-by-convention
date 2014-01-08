@@ -1,0 +1,63 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+
+	<!-- 
+		run the following command from visual studio command line in directory /Build/Scripts/:
+		> msbuild targets-blueprint.msbuild /t:CreateNewProjectFromBlueprint /p:NewNamespacePrefix="NamespacePrefix" 
+	
+		replace NamespacePrefix with you're future namespace (dots are allowed)
+	-->
+
+	<Import Project="targets.msbuild" />
+	
+	<Target Name="CreateNewProjectFromBlueprint">
+	
+		<Error Text="Pass NewNamespacePrefix parameter to update the blueprint (Com.Akqa for example)" Condition=" $(NewNamespacePrefix) == ''" />
+	
+		<PropertyGroup>
+			<BlueprintNamespacePrefixRegex>NamespacePrefix</BlueprintNamespacePrefixRegex>
+			<TempSourceDirectory>$(BaseDirectory)TempSource\</TempSourceDirectory>
+		</PropertyGroup>
+
+		<MakeDir Directories="$(TempSourceDirectory)" />
+		
+		<!-- update namespace prefix in all source files -->	
+		<ItemGroup>
+			<AllFilesToUpdateInternally Remove="@(AllFilesToUpdateInternally)" />
+			<AllFilesToUpdateInternally Include="$(SourceDirectory)**\*" Exclude="$(SourceDirectory)**\*.jpg;$(SourceDirectory)**\*.png;$(SourceDirectory)**\*.gif" />
+
+			<AllFilesToMoveAndRename Remove="@(AllFilesToMoveAndRename)" />
+			<AllFilesToMoveAndRename Include="$(SourceDirectory)**\*" />
+		</ItemGroup>	
+		<Attrib ReadOnly="false" Files="@(AllFilesToUpdateInternally)" />
+	    <FileUpdate Files="@(AllFilesToUpdateInternally)" Regex="$(BlueprintNamespacePrefixRegex)" ReplacementText="$(NewNamespacePrefix)" Condition=" $(NewNamespacePrefix) != '' " />
+		
+		<!-- copy everything from source directory to tempsource directory - and replace namespace prefix in filenames to new prefix -, remove source directory, then rename tempsource to source -->
+		<Attrib ReadOnly="false" Files="@(AllFilesToMoveAndRename)" />
+		<MSBuild Projects=".\targets-blueprint.msbuild" Properties="SourceFilePath=%(AllFilesToMoveAndRename.FullPath);TargetFilePath=$(TempSourceDirectory)%(RecursiveDir)%(Filename)%(Extension);NewNamespacePrefix=$(NewNamespacePrefix)" Targets="CopyAndRenameBlueprint"/>
+	
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(SourceDirectory)" Condition=" Exists('$(SourceDirectory)') " />
+				
+		<ItemGroup>
+			<TempSourceFiles Remove="@(TempSourceFiles)" />
+			<TempSourceFiles Include="$(TempSourceDirectory)**\*" />
+		</ItemGroup>	
+		<Copy SourceFiles="@(TempSourceFiles)" DestinationFolder="$(SourceDirectory)%(RecursiveDir)" Condition=" @(TempSourceFiles) != '' " />
+		
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="$(TempSourceDirectory)" Condition=" Exists('$(TempSourceDirectory)') " />
+				
+		<RemoveDir Directories="$(TempSourceDirectory)" />	
+		
+	</Target>
+	
+	<Target Name="CopyAndRenameBlueprint">
+	
+		<PropertyGroup>
+			<ReplaceVersionOne>NamespacePrefix</ReplaceVersionOne>
+			<TargetFilename>$(TargetFilePath.Replace($(ReplaceVersionOne),$(NewNamespacePrefix)))</TargetFilename>
+		</PropertyGroup>		
+					
+		<Copy SourceFiles="$(SourceFilePath)" DestinationFiles="$(TargetFilename)" />
+	
+	</Target>
+
+</Project>

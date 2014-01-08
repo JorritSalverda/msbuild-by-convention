@@ -47,7 +47,7 @@
 		<MakeDir Directories="@(DirectoriesToCreate)" />
 	</Target>
 
-	<Target Name="Clean" DependsOnTargets="CoreClean;CreateDirectories" />
+	<Target Name="Clean" DependsOnTargets="CoreClean;CreateDirectories;DownloadToolsWithNuget" />
 	<Target Name="CoreClean">
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(DirectoriesToCreate.FullPath)" Condition=" Exists('%(DirectoriesToCreate.FullPath)') " />
 		<RemoveDir Directories="@(DirectoriesToCreate)" />
@@ -70,6 +70,16 @@
 	    <FileUpdate Files="@(AssemblyInfoFiles)" Regex="\[\s*assembly\s*:\s*AssemblyVersion\s*\(\s*&quot;[\d\.\*]+&quot;\s*\)\s*\]" ReplacementText="[assembly: AssemblyVersion(&quot;$(BuildVersion)&quot;)]" Condition=" @(AssemblyInfoFiles) != '' " />
 	    <FileUpdate Files="@(AssemblyInfoFiles)" Regex="\[\s*assembly\s*:\s*AssemblyFileVersion\s*\(\s*&quot;[\d\.\*]+&quot;\s*\)\s*\]" ReplacementText="[assembly: AssemblyFileVersion(&quot;$(BuildVersion)&quot;)]" Condition=" @(AssemblyInfoFiles) != '' " />
 	</Target>
+   
+   <Target Name="DownloadToolsWithNuget">
+		
+      <!-- Update nuget.exe -->
+      <!--<Exec Command="$(NuGetPath) update -self" />-->
+      
+      <!-- download tools defined in $(BuildToolsDirectory)/packages.config -->
+      <Exec Command="$(NuGetPath) install $(BuildToolsDirectory)/packages.config -OutputDirectory $(BuildToolsDirectory)" />            
+            
+	</Target>   
 
 	<Target Name="ReplaceProjectImportStatements" Condition=" Exists('$(VisualStudioSqlServerDataToolsDir)Microsoft.Data.Tools.Schema.SqlTasks.targets') ">
 		<!-- look for sqlproj files and replace the import statement with one pointing to /build/tools/VisualStudio.v11.0/SSDT -->
@@ -605,7 +615,7 @@
 			</ProjectsToRelease>
 			<ProjectsToRelease Include="$(CSharpSourceDirectory)**\*.$(DatabaseProjectConventionName).sqlproj">
 				<UseAspNetCompilerForRelease>False</UseAspNetCompilerForRelease>
-				<FilesToCopyForReleasePattern>sql\$(Configuration)\*</FilesToCopyForReleasePattern>
+				<FilesToCopyForReleasePattern>bin\$(Configuration)\*</FilesToCopyForReleasePattern>
 			</ProjectsToRelease>
 		</ItemGroup>			
 	</Target>
@@ -640,13 +650,8 @@
 		</ConvertToAbsolutePath>
 
 		<!-- remove obj directory from build directory, otherwise aspnetcompiler might fail due to multiple web.configs -->
-		<ItemGroup>
-			<DirectoriesToRemove Remove="@(DirectoriesToRemove)" />
-			<DirectoriesToRemove Include="%(ProjectsToRelease.RelativeDir)obj" />
-		</ItemGroup>		
-
-		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(DirectoriesToRemove.FullPath)" Condition=" Exists('%(DirectoriesToRemove.FullPath)') " />
-		<RemoveDir Directories="@(DirectoriesToRemove)" />
+		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(ProjectsToRelease.RelativeDir)obj" Condition=" Exists('%(ProjectsToRelease.RelativeDir)obj') " />
+		<RemoveDir Directories="%(ProjectsToRelease.RelativeDir)obj" Condition=" Exists('%(ProjectsToRelease.RelativeDir)obj') " />
 		
 		<!-- if it has a web.config let aspnetcompiler precompile the project  -->
 		<AspNetCompiler VirtualPath="/" PhysicalPath="$(ProjectSourceDirectory)" TargetPath="$(ProjectReleaseDirectory)" Updateable="$(CreateUpdateableAspxFilesInRelease)" Condition=" $(UseAspNetCompilerForRelease) == 'True' " />
@@ -894,6 +899,12 @@
 		<!-- transform ServiceDefinition.csdef -->
 		<TransformXml Source="$(ProjectSourceDirectory)ServiceDefinition.csdef.original" Destination="$(ProjectSourceDirectory)ServiceDefinition.csdef" Transform="$(ProjectSourceDirectory)ServiceDefinition.%(AzureToRelease.Environment).csdef" Condition=" Exists('$(ProjectSourceDirectory)ServiceDefinition.%(AzureToRelease.Environment).csdef') " />
 
+		<!-- backup ServiceConfiguration.cscfg -->
+		<Copy SourceFiles="$(ProjectSourceDirectory)ServiceConfiguration.cscfg" DestinationFiles="$(ProjectSourceDirectory)ServiceConfiguration.cscfg.original" />
+
+		<!-- transform ServiceConfiguration.cscfg -->
+		<TransformXml Source="$(ProjectSourceDirectory)ServiceConfiguration.cscfg.original" Destination="$(ProjectSourceDirectory)ServiceConfiguration.cscfg" Transform="$(ProjectSourceDirectory)ServiceConfiguration.%(AzureToRelease.Environment).cscfg" Condition=" Exists('$(ProjectSourceDirectory)ServiceConfiguration.%(AzureToRelease.Environment).cscfg') " />      
+       
 		<!-- create the azure package, with transformed ServiceDefinition.csdef -->
 		<MsBuild Projects="%(AzureToRelease.FullPath)" Targets="Publish" Properties="$(BuildParameters);AbsoluteReleaseDirectory=$(AbsoluteReleaseDirectory)" BuildInParallel="true" />
 
@@ -906,9 +917,15 @@
 		</ItemGroup>
 		<Copy SourceFiles="@(ReleaseFilesToCopy)" DestinationFolder="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)" />
 
+		<!-- restore ServiceConfiguration.cscfg -->
+		<Copy SourceFiles="$(ProjectSourceDirectory)ServiceConfiguration.cscfg.original" DestinationFiles="$(ProjectSourceDirectory)ServiceConfiguration.cscfg" Retries="30" RetryDelayMilliseconds="5000" />
+
+		<!-- delete ServiceConfiguration.cscfg.original -->
+		<Delete Files="$(ProjectSourceDirectory)ServiceConfiguration.cscfg.original" />
+      
 		<!-- transform ServiceConfiguration.cscfg for environment -->
 		<TransformXml Source="$(ProjectSourceDirectory)ServiceConfiguration.cscfg" Destination="$(ReleaseDirectory)%(AzureToRelease.Environment)\$(RelativeProjectReleaseDirectory)ServiceConfiguration.cscfg" Transform="$(ProjectSourceDirectory)ServiceConfiguration.%(AzureToRelease.Environment).cscfg" Condition=" Exists('$(ProjectSourceDirectory)ServiceConfiguration.%(AzureToRelease.Environment).cscfg') And Exists('$(ProjectSourceDirectory)ServiceConfiguration.cscfg') " />
-
+       
 		<!-- restore ServiceDefinition.csdef -->
 		<Copy SourceFiles="$(ProjectSourceDirectory)ServiceDefinition.csdef.original" DestinationFiles="$(ProjectSourceDirectory)ServiceDefinition.csdef" Retries="30" RetryDelayMilliseconds="5000" />
 
@@ -1249,6 +1266,18 @@
 	</Target>
 	
 	<!-- endregion Delete targets -->	
+   
+   <!-- beginregion Miscellaneous targets -->
+   
+	<Target Name="SwapAzure">
+		<!-- call targets 'SwapAzure' with parameters 'AzureSubscriptionID=<AzureSubscriptionID>;AzureCertificateFilename=<AzureCertificateFilename>;AzureCertificatePassword=<AzureCertificatePassword>;AzureHostedServiceName=<AzureHostedServiceName>;AzureHostedServiceSlot=<Staging|Production>' -->
+		
+		<!-- https://www.windowsazure.com/en-us/develop/net/common-tasks/continuous-delivery/ -->
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="$(PowershellPath) -f $(AzureSwapScript) -serviceName $(AzureHostedServiceName) -certificateFilename $(AzureCertificateFilename) -certificatePassword $(AzureCertificatePassword) -subscriptionid $(AzureSubscriptionID) -swapAfterDeploy $(AzureSwapToProductionAfterDeploy) -hostedServiceSlot $(AzureHostedServiceSlot)" />	
+		
+	</Target>   
+   
+   <!-- endregion Miscellaneous targets -->   
 	
 	<!-- beginregion Analyze targets -->	
 
@@ -1286,10 +1315,10 @@
 			
 			<AssembliesToExludeFromCoverage Include="$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />			
 		</ItemGroup>
-		
+		     
 		<PropertyGroup>
 			<ExcludeFromCoverage>@(AssembliesToExludeFromCoverage -> '%(Filename)', ',')</ExcludeFromCoverage>
-			<SonarConnectionParameters>-D sonar.host.url=&quot;$(SonarHostUrl)&quot; -D sonar.jdbc.driver=&quot;$(SonarDbDriver)&quot; -D sonar.jdbc.url=&quot;$(SonarDbConnectionString)&quot; -D sonar.jdbc.username=&quot;$(SonarDbUsername)&quot; -D sonar.jdbc.password=&quot;$(SonarDbPassword)&quot;</SonarConnectionParameters>
+			<SonarConnectionParameters>-D sonar.host.url=&quot;$(SonarHostUrl)&quot; -D sonar.jdbc.driver=&quot;$(SonarDbDriver)&quot; -D sonar.jdbc.url=&quot;$(SonarDbConnectionString)&quot; -D sonar.jdbc.username=&quot;$(SonarDbUsername)&quot; -D sonar.jdbc.password=&quot;$(SonarDbPassword)&quot; -D sonar.sourceEncoding=&quot;UTF-8&quot; -D sonar.fxcop.mode=&quot;skip&quot; -D sonar.sources=&quot;.&quot;</SonarConnectionParameters>
 			<SonarConnectionParameters Condition=" $(SonarProfile) != '' ">$(SonarConnectionParameters) -D sonar.profile=&quot;$(SonarProfile)&quot;</SonarConnectionParameters>
 		</PropertyGroup>
 	
