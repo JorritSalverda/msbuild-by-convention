@@ -238,9 +238,6 @@
 		<ItemGroup>
 			<TestProjects Include="$(CSharpSourceDirectory)**\*.$(UnitTestsProjectConventionName).csproj" />
 		</ItemGroup>	
-		<PropertyGroup>
-			<OldTestResultsToRemove>$(UnitTestsProjectConventionName)</OldTestResultsToRemove>
-		</PropertyGroup>
 	</Target>
 	
 	<Target Name="RunIntegrationTests" DependsOnTargets="CompileCheck;CreateDirectories;BeforeRunIntegrationTests;CoreRunTests" />
@@ -248,15 +245,12 @@
 		<ItemGroup>
 			<TestProjects Include="$(CSharpSourceDirectory)**\*.$(IntegrationTestsProjectConventionName).csproj" />
 		</ItemGroup>	
-		<PropertyGroup>
-			<OldTestResultsToRemove>$(IntegrationTestsProjectConventionName)</OldTestResultsToRemove>
-		</PropertyGroup>
 	</Target>	
 		
-	<Target Name="CoreRunTests">
+	<Target Name="CoreRunTests">		
 	
-		<Delete Files="$(TestResultsDirectory)*$(OldTestResultsToRemove)*" />
-		<Delete Files="$(CodeCoverageDirectory)*$(OldTestResultsToRemove)*" />
+		<Delete Files="$(TestResultsDirectory)*" />
+		<Delete Files="$(CodeCoverageDirectory)*" />
 
 		<ItemGroup>
 			<TestAssemblies Remove="@(TestAssemblies)" />
@@ -1437,7 +1431,7 @@
 	<Target Name="Build" DependsOnTargets="DownloadToolsWithNuget;PrepareGlobalProperties;Compile" />
     <Target Name="BuildAndRunUnitTests" DependsOnTargets=";Build;RunUnitTests" />
     <Target Name="BuildAndRunIntegrationTests" DependsOnTargets="Build;RunIntegrationTests" />
-    <Target Name="BuildAndRunAllTests" DependsOnTargets="Build;RunUnitTests;RunIntegrationTests" />
+    <Target Name="BuildAndRunAllTests" DependsOnTargets="Build;BeforeRunUnitTests;BeforeRunIntegrationTests;CoreRunTests" />	
 
     <Target Name="Minify" DependsOnTargets="DownloadToolsWithNuget;PrepareGlobalProperties;MinifyJavaScript;MinifyCss;RunGruntFiles" />
 	<Target Name="PublishAssets" DependsOnTargets="DownloadToolsWithNuget;PrepareGlobalProperties;PublishFlash" />
