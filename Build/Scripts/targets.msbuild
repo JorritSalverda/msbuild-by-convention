@@ -770,8 +770,8 @@
 		<!-- remove debug sections -->
 		<FileUpdate Files="@(AllStaticFiles)" Regex="(&lt;!-- begin debug --&gt;.*?&lt;!-- end debug --&gt;)|(&lt;!-- begin release)|(end release --&gt;)" ReplacementText=" " Singleline="True" Multiline="True" Condition=" @(AllStaticFiles) != '' " />		
 
-		<!-- minify css and javascript within the temp directory -->
-		<CallTarget Targets="MinifyJavaScript;MinifyCss" />
+		<!-- minify css and javascript within the temp directory; use trick to execute the targets for each project to release -->		
+		<MSBuild Projects="targets.msbuild" Targets="MinifyJavaScript;MinifyCss" Properties="FakeProperty=%(ProjectsToRelease.RootDir)%(ProjectsToRelease.Directory)%(ProjectsToRelease.Environment)" />
 		
 		<!-- optimize all jpegs -->
 		<ItemGroup>
