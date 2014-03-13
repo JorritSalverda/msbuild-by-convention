@@ -1130,7 +1130,7 @@
 			<ProjectReleaseDirectory>%(MSDeployProjectsToDeploy.RootDir)%(MSDeployProjectsToDeploy.Directory)$(ProjectToDeploy)</ProjectReleaseDirectory>
 		</PropertyGroup>
 		
-		<Exec Command="&quot;$(MsDeployPath)&quot; -verb:sync -source:contentpath=&quot;$(ProjectReleaseDirectory)&quot; -dest:contentpath=&quot;$(DeployTargetName)&quot;,wmsvc=$(DeployServer),username=$(DeployUsername),password=$(DeployPassword) -allowUntrusted $(MSDeploySkipDirectoryParameter) $(MSDeploySkipFileParameter)" />
+		<Exec Command="&quot;$(MsDeployPath)&quot; -verb:sync -source:contentpath=&quot;$(ProjectReleaseDirectory)$(DeploySubdirToSync)&quot; -dest:contentpath=&quot;$(DeployTargetName)$(DeploySubdirToSync)&quot;,wmsvc=$(DeployServer),username=$(DeployUsername),password=$(DeployPassword) -allowUntrusted $(MSDeploySkipDirectoryParameter) $(MSDeploySkipFileParameter)" />
 
 		<RemoveDir Directories="$(ProjectReleaseDirectory)" />
 		

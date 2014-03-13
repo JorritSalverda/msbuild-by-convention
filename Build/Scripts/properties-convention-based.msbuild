@@ -96,6 +96,7 @@
 		<DeployUsername></DeployUsername>
 		<DeployPassword></DeployPassword>
 		<DeployTargetName></DeployTargetName>
+		<DeploySubdirToSync></DeploySubdirToSync>
 		<DeployWarmupUrl></DeployWarmupUrl>
 		<DeploySkipDirectoryPattern></DeploySkipDirectoryPattern>
 		<DeploySkipFilePattern></DeploySkipFilePattern>
