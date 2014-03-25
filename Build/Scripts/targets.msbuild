@@ -9,32 +9,16 @@
 	
 	<Target Name="PrepareGlobalProperties">
 
-		<ConvertToAbsolutePath Paths="$(SourceDirectory)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteSourceDirectory" />
-		</ConvertToAbsolutePath>
-		<ConvertToAbsolutePath Paths="$(CloudExtensionsDir)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteCloudExtensionsDir" />
-		</ConvertToAbsolutePath>
-		<ConvertToAbsolutePath Paths="$(ExtensionTasksPath)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteExtensionTasksPath" />
-		</ConvertToAbsolutePath>
-		<ConvertToAbsolutePath Paths="$(SqlServerRedistPath)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteSqlServerRedistPath" />
-		</ConvertToAbsolutePath>		
-		<ConvertToAbsolutePath Paths="$(VSToolsPath)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteVSToolsPath" />
-		</ConvertToAbsolutePath>		
-		<ConvertToAbsolutePath Paths="$(BuildToolsDirectory)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteBuildToolsDirectory" />
-		</ConvertToAbsolutePath>
-		<ConvertToAbsolutePath Paths="$(VisualStudioSqlServerDataToolsDir)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteVisualStudioSqlServerDataToolsDir" />
-		</ConvertToAbsolutePath>
-		<ConvertToAbsolutePath Paths="$(CommonTargetsExtensionFile)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteCommonTargetsExtensionFile" />
-		</ConvertToAbsolutePath>		
-		
 		<PropertyGroup>
+			<AbsoluteSourceDirectory>$([System.IO.Path]::GetFullPath('$(SourceDirectory)'))</AbsoluteSourceDirectory>
+			<AbsoluteCloudExtensionsDir>$([System.IO.Path]::GetFullPath('$(CloudExtensionsDir)'))</AbsoluteCloudExtensionsDir>
+			<AbsoluteExtensionTasksPath>$([System.IO.Path]::GetFullPath('$(ExtensionTasksPath)'))</AbsoluteExtensionTasksPath>
+			<AbsoluteSqlServerRedistPath>$([System.IO.Path]::GetFullPath('$(SqlServerRedistPath)'))</AbsoluteSqlServerRedistPath>
+			<AbsoluteVSToolsPath>$([System.IO.Path]::GetFullPath('$(VSToolsPath)'))</AbsoluteVSToolsPath>
+			<AbsoluteBuildToolsDirectory>$([System.IO.Path]::GetFullPath('$(BuildToolsDirectory)'))</AbsoluteBuildToolsDirectory>
+			<AbsoluteVisualStudioSqlServerDataToolsDir>$([System.IO.Path]::GetFullPath('$(VisualStudioSqlServerDataToolsDir)'))</AbsoluteVisualStudioSqlServerDataToolsDir>
+			<AbsoluteCommonTargetsExtensionFile>$([System.IO.Path]::GetFullPath('$(CommonTargetsExtensionFile)'))</AbsoluteCommonTargetsExtensionFile>
+		
 			<BuildParameters>$(BuildParameters);AbsoluteExtensionTasksPath=$(AbsoluteExtensionTasksPath);AbsoluteSourceDirectory=$(AbsoluteSourceDirectory);VSToolsPath=$(AbsoluteVSToolsPath);AbsoluteBuildToolsDirectory=$(AbsoluteBuildToolsDirectory);SsdtTargetsParentPath=$(AbsoluteVisualStudioSqlServerDataToolsDir);CommonTargetsExtensionFile=$(AbsoluteCommonTargetsExtensionFile)</BuildParameters>
 			<BuildParameters Condition=" $(ReplaceSsdtImportStatement) == 'True' ">$(BuildParameters);SqlServerRedistPath=$(AbsoluteSqlServerRedistPath)</BuildParameters>			
 			<BuildParameters Condition=" $(UseIncludedAzureSdkTargets) == 'True' ">$(BuildParameters);CloudExtensionsDir=$(AbsoluteCloudExtensionsDir)</BuildParameters>						
@@ -183,12 +167,12 @@
 		</ItemGroup>         
 	</Target>
 	<Target Name="CoreInstallNodePackages" Inputs="%(PackageJsonFiles.RootDir)%(PackageJsonFiles.Directory)" Outputs="AlwaysExecute">
-   
-		<ConvertToAbsolutePath Paths="%(PackageJsonFiles.RootDir)%(PackageJsonFiles.Directory)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="PackageJsonFileLocation" />
-		</ConvertToAbsolutePath>
+
+		<PropertyGroup>
+			<PackageJsonFileLocation>$([System.IO.Path]::GetFullPath('%(PackageJsonFiles.RootDir)%(PackageJsonFiles.Directory)'))</PackageJsonFileLocation>
+		</PropertyGroup>
           
-      <Exec Command="npm install"  WorkingDirectory="$(PackageJsonFileLocation)" />   
+		<Exec Command="npm install"  WorkingDirectory="$(PackageJsonFileLocation)" />   
       
 	</Target>
    
@@ -202,11 +186,11 @@
 	</Target>
 	<Target Name="CoreRunGruntFiles" Inputs="%(GruntFiles.RootDir)%(GruntFiles.Directory)" Outputs="AlwaysExecute">
 
-		<ConvertToAbsolutePath Paths="%(GruntFiles.RootDir)%(GruntFiles.Directory)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="GruntFileLocation" />
-		</ConvertToAbsolutePath>  
-   
-      <Exec Command="grunt" WorkingDirectory="$(GruntFileLocation)" />
+		<PropertyGroup>
+			<GruntFileLocation>$([System.IO.Path]::GetFullPath('%(GruntFiles.RootDir)%(GruntFiles.Directory)'))</GruntFileLocation>
+		</PropertyGroup>
+	  
+		<Exec Command="grunt" WorkingDirectory="$(GruntFileLocation)" />
       
 	</Target>  
    
@@ -270,12 +254,10 @@
 		</ItemGroup>
 
 		<!-- run tests if coverage is disabled -->
-		<NUnit Assemblies="@(NunitTestAssemblies)" ToolPath="$(NUnitToolPath)" OutputXmlFile="$(TestResultsDirectory)NUnit.Results.%(NunitTestAssemblies.Filename).xml" DisableShadowCopy="true" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'False' " ContinueOnError="$(ContinueOnTestError)" />
+		<Exec Command="$(NUnitToolPath)nunit-console.exe @(NunitTestAssemblies -> '%(FullPath)', ' ') /xml:$(TestResultsDirectory)NUnit.Results.%(NunitTestAssemblies.Filename).xml /noshadow /nologo" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'False' " ContinueOnError="$(ContinueOnTestError)" />	
 		
 		<!-- run tests with coverage (https://github.com/sawilde/opencover/wiki/Usage) -->
-		<Exec Command="$(OpenCoverPath)OpenCover.Console.exe -register:user -returntargetcode -target:$(NUnitToolPath)nunit-console.exe -targetargs:&quot;@(NunitTestAssemblies -> '%(FullPath)', ' ') /result=$(TestResultsDirectory)NUnit.Results.%(NunitTestAssemblies.Filename).xml /noshadow&quot; -filter:&quot;$(OpenCoverFilter)&quot; -output:$(CodeCoverageDirectory)NUnit.Coverage.%(NunitTestAssemblies.Filename).xml" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'True' " ContinueOnError="$(ContinueOnTestError)" />
-			
-			
+		<Exec Command="$(OpenCoverPath)OpenCover.Console.exe -register:user -returntargetcode -target:$(NUnitToolPath)nunit-console.exe -targetargs:&quot;@(NunitTestAssemblies -> '%(FullPath)', ' ') /result=$(TestResultsDirectory)NUnit.Results.%(NunitTestAssemblies.Filename).xml /noshadow&quot; -filter:&quot;$(OpenCoverFilter)&quot; -output:$(CodeCoverageDirectory)NUnit.Coverage.%(NunitTestAssemblies.Filename).xml" Condition=" @(NunitTestAssemblies) != '' And $(IncludeCoverage) == 'True' " ContinueOnError="$(ContinueOnTestError)" />	
 			
 		<!-- filter out test assemblies if Machine.Specifications.dll is not referenced -->
 		<ItemGroup>
@@ -331,13 +313,11 @@
 		</ItemGroup>
 	</Target>
 	<Target Name="CoreRunJMeterTests" Inputs="%(JMeterTestProjects.FullPath)" Outputs="AlwaysExecute">
-		<ConvertToAbsolutePath Paths="$(TestResultsDirectory)%(JMeterTestProjects.Filename).log">
-			<Output TaskParameter="AbsolutePaths" PropertyName="JMeterTestLogFileLocation" />
-		</ConvertToAbsolutePath>
-
-		<ConvertToAbsolutePath Paths="$(TestResultsDirectory)%(JMeterTestProjects.Filename).jtl">
-			<Output TaskParameter="AbsolutePaths" PropertyName="JMeterTestOutputFileLocation" />
-		</ConvertToAbsolutePath>
+		
+		<PropertyGroup>
+			<JMeterTestLogFileLocation>$([System.IO.Path]::GetFullPath('$(TestResultsDirectory)%(JMeterTestProjects.Filename).log'))</JMeterTestLogFileLocation>
+			<JMeterTestOutputFileLocation>$([System.IO.Path]::GetFullPath('$(TestResultsDirectory)%(JMeterTestProjects.Filename).jtl'))</JMeterTestOutputFileLocation>
+		</PropertyGroup>
 
 		<!-- start non-gui version of jmeter and pass jmx file, test output location and log file output location -->
 		<Exec Command="$(JMeterToolPath) -n -t %(JMeterTestProjects.FullPath) -l $(JMeterTestOutputFileLocation) -j $(JMeterTestLogFileLocation)" Condition=" @(JMeterTestProjects) != '' " />
@@ -365,17 +345,16 @@
 		</ItemGroup>
 	</Target>
 	<Target Name="CoreMinifyJavaScript" Inputs="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)" Outputs="AlwaysExecute">
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="%(JavaScriptFiles.Directory)" String2="\">
-			<Output ItemName="JavaScriptOutputDirectoryParts" TaskParameter="Strings" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(JavaScriptOutputDirectoryParts)">
-            <Output TaskParameter="OutputItems" ItemName="JavaScriptSubDirectory" />
-        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
-
+			
+		<PropertyGroup>		
+			<LastItemIndex>$([MSBuild]::Subtract($([System.String]::Copy('%(JavaScriptFiles.Directory)').Trim('\').Split('\').Length),1))</LastItemIndex>
+			<JavaScriptSubDirectory>$([System.String]::Copy('%(JavaScriptFiles.Directory)').Trim('\').Split('\')[$(LastItemIndex)])</JavaScriptSubDirectory>
+		</PropertyGroup>
+		
 		<!-- minify into a single combined file per subdirectory -->
 		<JavaScriptCompressorTask
 			SourceFiles="@(JavaScriptFiles)"
-			OutputFile="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)..\@(JavaScriptSubDirectory).min.js"
+			OutputFile="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)..\$(JavaScriptSubDirectory).min.js"
 			ObfuscateJavaScript="True"
 			PreserveAllSemicolons="False"
 			DisableOptimizations="False"
@@ -393,7 +372,7 @@
 		<!-- and a version with filenumber in the filename -->
 		<JavaScriptCompressorTask
 			SourceFiles="@(JavaScriptFiles)"
-			OutputFile="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)..\@(JavaScriptSubDirectory)$(VersionedFilePostfix).min.js"
+			OutputFile="%(JavaScriptFiles.RootDir)%(JavaScriptFiles.Directory)..\$(JavaScriptSubDirectory)$(VersionedFilePostfix).min.js"
 			ObfuscateJavaScript="True"
 			PreserveAllSemicolons="False"
 			DisableOptimizations="False"
@@ -444,17 +423,16 @@
 		</ItemGroup>
 	</Target>
 	<Target Name="CoreMinifyCss" Inputs="%(CssFiles.RootDir)%(CssFiles.Directory)" Outputs="AlwaysExecute">
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="%(CssFiles.Directory)" String2="\">
-			<Output ItemName="CssOutputDirectoryParts" TaskParameter="Strings" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(CssOutputDirectoryParts)">
-            <Output TaskParameter="OutputItems" ItemName="CssSubDirectory" />
-        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
 		
+		<PropertyGroup>		
+			<LastItemIndex>$([MSBuild]::Subtract($([System.String]::Copy('%(CssFiles.Directory)').Trim('\').Split('\').Length),1))</LastItemIndex>
+			<CssSubDirectory>$([System.String]::Copy('%(CssFiles.Directory)').Trim('\').Split('\')[$(LastItemIndex)])</CssSubDirectory>
+		</PropertyGroup>		
+				
 		<!-- minify into a single combined file per subdirectory -->
 		<CssCompressorTask
 			SourceFiles="@(CssFiles)"
-			OutputFile="%(CssFiles.RootDir)%(CssFiles.Directory)@(CssSubDirectory).min.css"
+			OutputFile="%(CssFiles.RootDir)%(CssFiles.Directory)$(CssSubDirectory).min.css"
 			CompressionType="Standard"
 			EncodingType="UTF8"
 			DeleteSourceFiles="false"
@@ -468,7 +446,7 @@
 		<!-- and a version with filenumber in the filename -->
 		<CssCompressorTask
 			SourceFiles="@(CssFiles)"
-			OutputFile="%(CssFiles.RootDir)%(CssFiles.Directory)@(CssSubDirectory)$(VersionedFilePostfix).min.css"
+			OutputFile="%(CssFiles.RootDir)%(CssFiles.Directory)$(CssSubDirectory)$(VersionedFilePostfix).min.css"
 			CompressionType="Standard"
 			EncodingType="UTF8"
 			DeleteSourceFiles="false"
@@ -503,30 +481,22 @@
 		</ItemGroup>
 	</Target>
 	<Target Name="CorePublishFlash" Inputs="%(FlashProjectDirs.RootDir)%(FlashProjectDirs.Directory)" Outputs="AlwaysExecute">
-		<!-- get rid of the trailing slash -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(FlashProjectDirs.RelativeDir)\" OldValue="\\" NewValue="">
-            <Output PropertyName="TrimmedFlashProjectDirectory" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-
 		<!-- get the last directory name -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="$(TrimmedFlashProjectDirectory)" String2="\">
-			<Output ItemName="FlashProjectDirsParts" TaskParameter="Strings" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(FlashProjectDirsParts)">
-            <Output TaskParameter="OutputItems" ItemName="FlashProjectDirNameOutput" />
-        </MSBuild.ExtensionPack.Framework.MsBuildHelper>
+		<PropertyGroup>		
+			<LastItemIndex>$([MSBuild]::Subtract($([System.String]::Copy('%(FlashProjectDirs.RelativeDir)').Trim('\').Split('\').Length),1))</LastItemIndex>
+			<FlashProjectDirNameOutput>$([System.String]::Copy('%(FlashProjectDirs.RelativeDir)').Trim('\').Split('\')[$(LastItemIndex)])</FlashProjectDirNameOutput>
+		</PropertyGroup>
+		
 		<PropertyGroup>
 			<FlashProjectDirName>@(FlashProjectDirNameOutput)</FlashProjectDirName>
 		</PropertyGroup>
 
 		<!-- resolve the same directory tree within SourceDirectory -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Replace" OldString="%(FlashProjectDirs.RelativeDir)" OldValue="$(FlashSourceDirectory)" NewValue="$(CSharpSourceDirectory)">
-            <Output PropertyName="RelativeSwfTargetDirectory" TaskParameter="NewString" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<ConvertToAbsolutePath Paths="$(RelativeSwfTargetDirectory)../">
-			<Output TaskParameter="AbsolutePaths" PropertyName="SwfTargetDirectory" />
-		</ConvertToAbsolutePath>
-
+		<PropertyGroup>
+			<RelativeSwfTargetDirectory>$([System.String]::Copy('%(FlashProjectDirs.RelativeDir)').Replace($(FlashSourceDirectory),$(CSharpSourceDirectory)))</RelativeSwfTargetDirectory>
+			<SwfTargetDirectory>$([System.IO.Path]::GetFullPath('$(RelativeSwfTargetDirectory)../'))</SwfTargetDirectory>
+		</PropertyGroup>
+		
         <Error Text="Target path $(SwfTargetDirectory) doesn't exists. Put your as3proj file in a similar directory structure inside $(FlashSourceDirectory) as the one in $(CSharpSourceDirectory) to publish to." Condition=" !Exists('$(SwfTargetDirectory)') " />
 
 		<PropertyGroup>
@@ -535,11 +505,8 @@
 
 		<Message Text="Publishing %(FlashProjectDirs.RelativeDir) to $(SwfTargetFile)" Importance="high" />
 
-		<ConvertToAbsolutePath Paths="%(FlashProjectDirs.RootDir)%(FlashProjectDirs.Directory)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="WorkingDir" />
-		</ConvertToAbsolutePath>
-
 		<PropertyGroup>
+			<WorkingDir>$([System.IO.Path]::GetFullPath('%(FlashProjectDirs.RootDir)%(FlashProjectDirs.Directory)'))</WorkingDir>
 			<BuildPropertiesFile>%(FlashProjectDirs.RootDir)%(FlashProjectDirs.Directory)build-properties.xml</BuildPropertiesFile>
 		</PropertyGroup>
 
@@ -700,29 +667,19 @@
 			<UseAspNetCompilerForRelease>%(ProjectsToRelease.UseAspNetCompilerForRelease)</UseAspNetCompilerForRelease>
 			<FilesToCopyForReleasePattern>%(ProjectsToRelease.FilesToCopyForReleasePattern)</FilesToCopyForReleasePattern>
 		</PropertyGroup>
-
-		<ItemGroup>
-			<ProjectName Remove="@(ProjectName)" />
-		</ItemGroup>
 		
-		<!-- get project name -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="$(ProjectSourceDirectory)" String2="\">
-			<Output ItemName="ProjectSourceDirectoryParts" TaskParameter="Strings" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(ProjectSourceDirectoryParts)">
-            <Output TaskParameter="OutputItems" ItemName="ProjectName" />
-        </MSBuild.ExtensionPack.Framework.MsBuildHelper>			
-
-		<PropertyGroup>
-			<ProjectName>@(ProjectName)</ProjectName>
+		<!-- get project name -->	
+		<PropertyGroup>		
+			<LastItemIndex>$([MSBuild]::Subtract($([System.String]::Copy('$(ProjectSourceDirectory)').Trim('\').Split('\').Length),1))</LastItemIndex>
+			<ProjectName>$([System.String]::Copy('$(ProjectSourceDirectory)').Trim('\').Split('\')[$(LastItemIndex)])</ProjectName>
 			<RelativeProjectReleaseDirectory>$(ProjectName)\</RelativeProjectReleaseDirectory>
-		</PropertyGroup>			
+		</PropertyGroup>		
 		
 		<!-- resolve the temporary release directory -->
-		<ConvertToAbsolutePath Paths="$(ReleaseTempDirectory)$(RelativeProjectReleaseDirectory)">
-			<Output TaskParameter="AbsolutePaths" PropertyName="ProjectReleaseDirectory" />
-		</ConvertToAbsolutePath>
-
+		<PropertyGroup>
+			<ProjectReleaseDirectory>$([System.IO.Path]::GetFullPath('$(ReleaseTempDirectory)$(RelativeProjectReleaseDirectory)'))</ProjectReleaseDirectory>
+		</PropertyGroup>		
+		
 		<!-- remove obj directory from build directory, otherwise aspnetcompiler might fail due to multiple web.configs -->
 		<MSBuild.ExtensionPack.FileSystem.Folder TaskAction="RemoveContent" Path="%(ProjectsToRelease.RelativeDir)obj" Condition=" Exists('%(ProjectsToRelease.RelativeDir)obj') " />
 		<RemoveDir Directories="%(ProjectsToRelease.RelativeDir)obj" Condition=" Exists('%(ProjectsToRelease.RelativeDir)obj') " />
@@ -872,7 +829,7 @@
 			</FilesToZip>
 		</ItemGroup>
 			
-		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(FilesToZip.Environment)\$(RelativeProjectReleaseDirectory)" ZipFileName="$(ReleaseDirectory)%(FilesToZip.Environment)\@(ProjectName)-%(FilesToZip.Environment)-$(BuildVersion).zip" ZipLevel="9" />
+		<Zip Files="@(FilesToZip)" WorkingDirectory="$(ReleaseDirectory)%(FilesToZip.Environment)\$(RelativeProjectReleaseDirectory)" ZipFileName="$(ReleaseDirectory)%(FilesToZip.Environment)\$(ProjectName)-%(FilesToZip.Environment)-$(BuildVersion).zip" ZipLevel="9" />
 					
 		<ItemGroup>
 			<ReleaseDirectoriesToRemove Include="$(ReleaseDirectory)%(AllEnvironments.Identity)\$(ProjectName)" />
@@ -936,22 +893,15 @@
 		<PropertyGroup>
 			<ProjectSourceDirectory>%(AzureToRelease.RootDir)%(AzureToRelease.Directory)</ProjectSourceDirectory>
 		</PropertyGroup>
-
-		<ItemGroup>
-			<ProjectName Remove="@(ProjectName)" />
-		</ItemGroup>
 		
 		<!-- get project name -->
-		<MSBuild.ExtensionPack.Framework.TextString TaskAction="Split" String1="$(ProjectSourceDirectory)" String2="\">
-			<Output ItemName="ProjectSourceDirectoryParts" TaskParameter="Strings" />
-        </MSBuild.ExtensionPack.Framework.TextString>
-		<MSBuild.ExtensionPack.Framework.MsBuildHelper TaskAction="GetLastItem" InputItems1="@(ProjectSourceDirectoryParts)">
-            <Output TaskParameter="OutputItems" ItemName="ProjectName" />
-        </MSBuild.ExtensionPack.Framework.MsBuildHelper>			
+		<PropertyGroup>		
+			<LastItemIndex>$([MSBuild]::Subtract($([System.String]::Copy('$(ProjectSourceDirectory)').Trim('\').Split('\').Length),1))</LastItemIndex>
+			<ProjectName>$([System.String]::Copy('$(ProjectSourceDirectory)').Trim('\').Split('\')[$(LastItemIndex)])</ProjectName>
+		</PropertyGroup>
 			
 		<!-- resolve the release directory -->
 		<PropertyGroup>
-			<ProjectName>@(ProjectName)</ProjectName>
 			<RelativeProjectReleaseDirectory>$(ProjectName)\</RelativeProjectReleaseDirectory>
 		</PropertyGroup>
 		
@@ -966,10 +916,10 @@
 		<RemoveDir Directories="@(DirectoriesToRemove)" />
 
 		<!-- convert all relative directory paths to absolute paths -->
-		<ConvertToAbsolutePath Paths="$(ReleaseDirectory)%(AzureToRelease.Environment)\">
-			<Output TaskParameter="AbsolutePaths" PropertyName="AbsoluteReleaseDirectory" />
-		</ConvertToAbsolutePath>
-
+		<PropertyGroup>
+			<AbsoluteReleaseDirectory>$([System.IO.Path]::GetFullPath('$(ReleaseDirectory)%(AzureToRelease.Environment)\'))</AbsoluteReleaseDirectory>
+		</PropertyGroup>		
+		
 		<!-- backup ServiceDefinition.csdef -->
 		<Copy SourceFiles="$(ProjectSourceDirectory)ServiceDefinition.csdef" DestinationFiles="$(ProjectSourceDirectory)ServiceDefinition.csdef.original" />
 
@@ -1011,7 +961,6 @@
 				
 		<!-- zip release directory and store zip with version number one directory above -->
 		<ItemGroup>
-			<ProjectName Remove="@(ProjectName)" />
 			<FilesToZip Remove="@(FilesToZip)" />
 			<FilesToZip Include="$(ReleaseDirectory)%(ReleaseFilesToCopy.Environment)\$(RelativeProjectReleaseDirectory)%(ReleaseFilesToCopy.RecursiveDir)\**\*"> 
 				<Environment>%(ReleaseFilesToCopy.Environment)</Environment>
@@ -1124,8 +1073,8 @@
 		<!-- unzip file first -->
 		<Unzip ZipFileName="%(MSDeployProjectsToDeploy.FullPath)" TargetDirectory="%(MSDeployProjectsToDeploy.RootDir)%(MSDeployProjectsToDeploy.Directory)$(ProjectToDeploy)" />
 				
-		<PropertyGroup>
-			<MSDeploySkipDirectoryParameter Condition=" $(DeploySkipDirectoryPattern) != '' ">-skip:objectName=dirPath,absolutePath=&quot;$(DeploySkipDirectoryPattern)&quot;</MSDeploySkipDirectoryParameter>
+		<PropertyGroup>		
+            <MSDeploySkipDirectoryParameter Condition=" $(DeploySkipDirectoryPattern) != '' ">-skip:objectName=dirPath,absolutePath=&quot;$(DeploySkipDirectoryPattern)&quot;</MSDeploySkipDirectoryParameter>
 			<MSDeploySkipFileParameter Condition=" $(DeploySkipFilePattern) != '' ">-skip:objectName=filePath,absolutePath=&quot;$(DeploySkipFilePattern)&quot;</MSDeploySkipFileParameter>
 			<ProjectReleaseDirectory>%(MSDeployProjectsToDeploy.RootDir)%(MSDeployProjectsToDeploy.Directory)$(ProjectToDeploy)</ProjectReleaseDirectory>
 		</PropertyGroup>

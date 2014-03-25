@@ -175,19 +175,17 @@
 		<ItemsToCopyToRelease Include="$(NuGetPath)" />
 		<ItemsToCopyToRelease Include="$(ScriptsDirectory)*" Exclude="$(ScriptsDirectory)*.bat;$(ScriptsDirectory)*.txt" />
 		
-	</ItemGroup>		
+	</ItemGroup>
 			
 	<!-- tasks used for nunit, attrib en other tasks -->
 	<UsingTask AssemblyFile="$(MSBuildCommunityTasksPath)" TaskName="MSBuild.Community.Tasks.Attrib" />
 	<UsingTask AssemblyFile="$(MSBuildCommunityTasksPath)" TaskName="MSBuild.Community.Tasks.FileUpdate" />
-	<UsingTask AssemblyFile="$(MSBuildCommunityTasksPath)" TaskName="MSBuild.Community.Tasks.NUnit" />
 	<UsingTask AssemblyFile="$(MSBuildCommunityTasksPath)" TaskName="MSBuild.Community.Tasks.Net.HttpRequest" />
 	<UsingTask AssemblyFile="$(MSBuildCommunityTasksPath)" TaskName="MSBuild.Community.Tasks.Zip" />
 	<UsingTask AssemblyFile="$(MSBuildCommunityTasksPath)" TaskName="MSBuild.Community.Tasks.Unzip" />
 
 	<!-- tasks used for minification -->
 	<UsingTask AssemblyFile="$(ExtensionTasksPath)" TaskName="MSBuild.ExtensionPack.FileSystem.Folder"/>
-	<UsingTask AssemblyFile="$(ExtensionTasksPath)" TaskName="MSBuild.ExtensionPack.Framework.TextString"/>
 	<UsingTask AssemblyFile="$(ExtensionTasksPath)" TaskName="MSBuild.ExtensionPack.Framework.MSBuildHelper"/>
 	<UsingTask AssemblyFile="$(ExtensionTasksPath)" TaskName="MSBuild.ExtensionPack.CodeQuality.FxCop"/>
 			
@@ -200,8 +198,5 @@
 	
 	<!-- task for config transforms -->
 	<UsingTask TaskName="TransformXml" AssemblyFile="$(WebPublishingPath)" />
-	
-	<!-- task for code coverage -->
-	<UsingTask AssemblyFile="$(OpenCoverMSBuildTasksPath)OpenCover.MSBuild.dll" TaskName="OpenCover.MSBuild.OpenCover" />
 	
 </Project>
