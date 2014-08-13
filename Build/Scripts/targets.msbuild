@@ -284,10 +284,10 @@
 		</ItemGroup>
 
 		<!-- run tests if coverage is disabled -->
-		<Exec Command="$(MSTestRunnerPath) /testcontainer:%(MSTestTestAssemblies.Identity) /resultsfile:$(TestResultsDirectory)MsTest.%(MSTestTestAssemblies.Filename).Results.xml /nologo" Condition=" @(MSTestTestAssemblies) != '' And $(IncludeCoverage) == 'False' " IgnoreExitCode="$(ContinueOnTestError)" />
+		<Exec Command="$(MSTestRunnerPath) /testcontainer:%(MSTestTestAssemblies.Identity) /resultsfile:$(TestResultsDirectory)MsTest.Results.%(MSTestTestAssemblies.Filename).xml /nologo" Condition=" @(MSTestTestAssemblies) != '' And $(IncludeCoverage) == 'False' " IgnoreExitCode="$(ContinueOnTestError)" />
 
 		<!-- run tests with coverage (https://github.com/sawilde/opencover/wiki/Usage) -->
-		<Exec Command="$(OpenCoverPath)OpenCover.Console.exe -register:user -returntargetcode -target:$(MSTestRunnerPath) -targetargs:&quot;/testcontainer:%(MSTestTestAssemblies.Identity) /resultsfile:$(TestResultsDirectory)MsTest.%(MSTestTestAssemblies.Filename).Results.xml /nologo&quot; -filter:&quot;$(OpenCoverFilter)&quot; -output:$(CodeCoverageDirectory)MSTest.Coverage.%(MSTestTestAssemblies.Filename).xml" Condition=" @(MSTestTestAssemblies) != '' And $(IncludeCoverage) == 'True' " ContinueOnError="$(ContinueOnTestError)" />
+		<Exec Command="$(OpenCoverPath)OpenCover.Console.exe -register:user -returntargetcode -target:$(MSTestRunnerPath) -targetargs:&quot;/testcontainer:%(MSTestTestAssemblies.Identity) /resultsfile:$(TestResultsDirectory)MsTest.Results.%(MSTestTestAssemblies.Filename).xml /nologo&quot; -filter:&quot;$(OpenCoverFilter)&quot; -output:$(CodeCoverageDirectory)MSTest.Coverage.%(MSTestTestAssemblies.Filename).xml" Condition=" @(MSTestTestAssemblies) != '' And $(IncludeCoverage) == 'True' " ContinueOnError="$(ContinueOnTestError)" />
 		
 		
 		<!-- convert coverage xml to html report (http://reportgenerator.codeplex.com/) -->
